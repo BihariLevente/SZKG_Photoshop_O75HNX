@@ -13,26 +13,32 @@ namespace SZKG_Photoshop_O75HNX
 	{
 		public static Bitmap InvertImage(Bitmap sourceImage)
 		{
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
+			int imgWidth = sourceImage.Width;
+			int imgHeight = sourceImage.Height;
+
+			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, imgWidth, imgHeight),
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
+			// teljes sorhossz (stride) = nWidth (hasznos bájtok száma) + nOffset (igazítás 4 byte-ra)
 			int stride = bmData.Stride;
 			System.IntPtr Scan0 = bmData.Scan0;
+
 			unsafe
 			{
-				byte* p = (byte*)(void*)Scan0;
-				int nOffset = stride - bmData.Width * 3;
-				int nWidth = bmData.Width * 3;
+				byte* pBase = (byte*)(void*)Scan0;
+				int nWidth = imgWidth * 3;
+				int nOffset = stride - nWidth;
 
-				for (int y = 0; y < bmData.Height; ++y)
+				System.Threading.Tasks.Parallel.For(0, imgHeight, x =>
 				{
-					for (int x = 0; x < nWidth; ++x)
+					byte* p = pBase + x * stride; // új sor
+
+					for (int y = 0; y < nWidth; ++y)
 					{
 						p[0] = (byte)(255 - p[0]);
 						++p;
 					}
-					p += nOffset;
-				}
+				});
 			}
 
 			sourceImage.UnlockBits(bmData);
