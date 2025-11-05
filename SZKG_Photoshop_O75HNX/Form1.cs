@@ -26,6 +26,13 @@ namespace SZKG_Photoshop_O75HNX
 				AdjustGroupBoxAndButton(groupBox11, button11);
 				AdjustGroupBoxAndButton(groupBox12, button12);
 			};
+
+			string imagePath = Path.Combine(Application.StartupPath, "defaultimg.jpg");
+
+			if (File.Exists(imagePath))
+			{
+				pictureBox1.Image = Image.FromFile(imagePath);
+			}
 		}
 
 		private void AdjustGroupBoxAndButton(GroupBox groupBox, Button button)
@@ -75,7 +82,7 @@ namespace SZKG_Photoshop_O75HNX
 			{
 				RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGammaCorrection(new Bitmap(pictureBox1.Image));
+					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGammaCorrection(new Bitmap(pictureBox1.Image), gammaValue);
 				}, "ApplyGammaCorrection");
 			}
 		}
@@ -86,7 +93,7 @@ namespace SZKG_Photoshop_O75HNX
 			{
 				RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ApplyLogTransform(new Bitmap(pictureBox1.Image));
+					pictureBox2.Image = ImageProcessingAlgorithms.ApplyLogTransform(new Bitmap(pictureBox1.Image), cValue);
 				}, "ApplyLogTransform");
 			}
 		}

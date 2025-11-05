@@ -13,27 +13,27 @@ namespace SZKG_Photoshop_O75HNX
 	{
 		public static Bitmap InvertImage(Bitmap sourceImage)
 		{
-			int imgWidth = sourceImage.Width;
-			int imgHeight = sourceImage.Height;
+			int imgWidthPix = sourceImage.Width;
+			int imgHeightPix = sourceImage.Height;
 
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, imgWidth, imgHeight),
+			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix), 
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
 			// teljes sorhossz (stride) = nWidth (hasznos bájtok száma) + nOffset (igazítás 4 byte-ra)
 			int stride = bmData.Stride;
-			System.IntPtr Scan0 = bmData.Scan0;
+			IntPtr Scan0 = bmData.Scan0;
 
 			unsafe
 			{
 				byte* pBase = (byte*)(void*)Scan0;
-				int nWidth = imgWidth * 3;
-				int nOffset = stride - nWidth;
+				int rowBytes = imgWidthPix * 3;
+				//int nOffset = stride - nWidth;
 
-				System.Threading.Tasks.Parallel.For(0, imgHeight, x =>
+				System.Threading.Tasks.Parallel.For(0, imgHeightPix, x =>
 				{
 					byte* p = pBase + x * stride; // új sor
 
-					for (int y = 0; y < nWidth; ++y)
+					for (int y = 0; y < rowBytes; ++y)
 					{
 						p[0] = (byte)(255 - p[0]);
 						++p;
@@ -45,23 +45,79 @@ namespace SZKG_Photoshop_O75HNX
 			return sourceImage;
 		}
 
-		public static Bitmap ApplyGammaCorrection(Bitmap sourceImage)
+		public static Bitmap ApplyGammaCorrection(Bitmap sourceImage, double gamma = 1)
 		{
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
+			int imgWidth = sourceImage.Width;
+			int imgHeight = sourceImage.Height;
+
+			// Gamma LUT (look up table)
+			byte[] gammaLUT = new byte[256];
+
+			for (int i = 0; i < 256; i++)
+			{
+				gammaLUT[i] = (byte)Math.Min(255, (int)(255.0 * Math.Pow(i / 255.0, gamma))); // g(x,y) = 255 * (f(x,y) / 255)^gamma
+			}
+
+			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, imgWidth, imgHeight), 
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
-			//TODO: 
+			int stride = bmData.Stride;
+			IntPtr scan0 = bmData.Scan0;
+
+			unsafe
+			{
+				byte* pBase = (byte*)scan0;
+				int rowBytes = imgWidth * 3;
+
+				System.Threading.Tasks.Parallel.For(0, imgHeight, y =>
+				{
+					byte* p = pBase + y * stride;
+
+					for (int x = 0; x < rowBytes; x++)
+					{
+						p[x] = gammaLUT[p[x]];
+					}
+				});
+			}
 
 			sourceImage.UnlockBits(bmData);
 			return sourceImage;
 		}
 
-		public static Bitmap ApplyLogTransform(Bitmap sourceImage)
+		public static Bitmap ApplyLogTransform(Bitmap sourceImage, double c = 1)
 		{
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
+			int imgWidth = sourceImage.Width;
+			int imgHeight = sourceImage.Height;
+
+			// Gamma LUT (look up table)
+			byte[] logLUT = new byte[256];
+
+			for (int i = 0; i < 256; i++)
+			{
+				logLUT[i] = (byte)Math.Min(255, (c * Math.Log(1 + i))); // g(x,y) = c * log(1 + f(x,y))
+			}
+
+			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, imgWidth, imgHeight),
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
-			//TODO: 
+			int stride = bmData.Stride;
+			IntPtr scan0 = bmData.Scan0;
+
+			unsafe
+			{
+				byte* pBase = (byte*)scan0;
+				int rowBytes = imgWidth * 3;
+
+				System.Threading.Tasks.Parallel.For(0, imgHeight, y =>
+				{
+					byte* p = pBase + y * stride;
+
+					for (int x = 0; x < rowBytes; x++)
+					{
+						p[x] = logLUT[p[x]];
+					}
+				});
+			}
 
 			sourceImage.UnlockBits(bmData);
 			return sourceImage;

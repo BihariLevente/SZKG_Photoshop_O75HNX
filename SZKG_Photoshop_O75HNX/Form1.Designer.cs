@@ -39,26 +39,47 @@ namespace SZKG_Photoshop_O75HNX
 
 			button1 = CreateButton("Load", button1_Click);
 			groupBox1 = CreateGroupBox("Load", button1);
+
 			button2 = CreateButton("Invert", button2_Click);
 			groupBox2 = CreateGroupBox("Invert", button2);
+
+			string gammaValuePrefix = "Gamma value: ";
 			button3 = CreateButton("GammaCorrect", button3_Click);
 			groupBox3 = CreateGroupBox("GammaCorrect", button3);
+			var gammaLabel = CreateLabel(gammaValuePrefix, gammaValue);
+			var gammaTrackBar = CreateParameterTrackBar(value => gammaValue = value, gammaLabel, 0.1, 10, 0.1, 1.0, gammaValuePrefix);
+			groupBox3.Controls.Add(gammaLabel);
+			groupBox3.Controls.Add(gammaTrackBar);
+
+			string cValuePrefix = "C value: ";
 			button4 = CreateButton("LogTransform", button4_Click);
 			groupBox4 = CreateGroupBox("LogTransform", button4);
+			var cLabel = CreateLabel(cValuePrefix, cValue);
+			var cTrackBar = CreateParameterTrackBar(value => cValue = value, cLabel, 5, 100, 1, 46.0, cValuePrefix);
+			groupBox4.Controls.Add(cLabel);
+			groupBox4.Controls.Add(cTrackBar);
+
 			button5 = CreateButton("GrayScale", button5_Click);
 			groupBox5 = CreateGroupBox("GrayScale", button5);
+
 			button6 = CreateButton("ComputeHist", button6_Click);
 			groupBox6 = CreateGroupBox("ComputeHist", button6);
+
 			button7 = CreateButton("EqualizeHist", button7_Click);
 			groupBox7 = CreateGroupBox("EqualizeHist", button7);
+
 			button8 = CreateButton("BoxFilter", button8_Click);
 			groupBox8 = CreateGroupBox("BoxFilter", button8);
+
 			button9 = CreateButton("GaussFilter", button9_Click);
 			groupBox9 = CreateGroupBox("GaussFilter", button9);
+
 			button10 = CreateButton("SobelEdge", button10_Click);
 			groupBox10 = CreateGroupBox("SobelEdge", button10);
+
 			button11 = CreateButton("LaplacianEdge", button11_Click);
 			groupBox11 = CreateGroupBox("LaplacianEdge", button11);
+
 			button12 = CreateButton("KeyPoints", button12_Click);
 			groupBox12 = CreateGroupBox("KeyPoints", button12);
 
@@ -197,6 +218,45 @@ namespace SZKG_Photoshop_O75HNX
 			return button;
 		}
 
+		private TrackBar CreateParameterTrackBar(Action<double> onValueChanged, Label label, double min, double max, double step, double defaultValue, string labelPrefix)
+		{
+			int scale = (int)(1 / step); // pl. 0.1 → 10
+
+			var trackBar = new TrackBar
+			{
+				Minimum = (int)(min * scale),
+				Maximum = (int)(max * scale),
+				TickFrequency = (int)(scale * (max - min) / 10),
+				Value = (int)(defaultValue * scale),
+				SmallChange = 1,
+				LargeChange = 5,
+				Dock = DockStyle.Top,
+				Width = 120,
+			};
+
+			trackBar.Scroll += (s, e) =>
+			{
+				double value = trackBar.Value / (double)scale;
+				onValueChanged(value);
+				label.Text = $"{labelPrefix}: {value:F1}";
+			};
+
+			return trackBar;
+		}
+
+		private Label CreateLabel(string labelPrefix = "", double defaultValue = 1.0)
+		{
+			var label = new Label
+			{
+				Text = $"{labelPrefix}: {defaultValue:F1}",
+				AutoSize = true
+			};
+
+			return label;
+		}
+
+		public double gammaValue = 1.0;
+		public double cValue = 46.0;
 
 		private TableLayoutPanel tableLayoutPanel1;
 		private TableLayoutPanel tableLayoutPanel2;
