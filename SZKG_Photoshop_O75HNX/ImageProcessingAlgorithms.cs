@@ -155,18 +155,65 @@ namespace SZKG_Photoshop_O75HNX
 			return sourceImage;
 		}
 
-		public static Bitmap ComputeHistogram(Bitmap sourceImage)
-		{
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
-				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+        public static Bitmap ComputeHistogram(Bitmap sourceImage)
+        {
+            int width = sourceImage.Width;
+            int height = sourceImage.Height;
 
-			//TODO: 
+            int[] histR = new int[256];
+            int[] histG = new int[256];
+            int[] histB = new int[256];
 
-			sourceImage.UnlockBits(bmData);
-			return sourceImage;
-		}
+            // Hisztogram számolása
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    Color pixel = sourceImage.GetPixel(x, y);
+                    histR[pixel.R]++;
+                    histG[pixel.G]++;
+                    histB[pixel.B]++;
+                }
+            }
 
-		public static Bitmap EqualizeHistogram(Bitmap sourceImage)
+            // Három panel magassága, egyenként 100 pixel
+            int panelHeight = 100;
+            int histBitmapHeight = panelHeight * 3;
+            Bitmap histBitmap = new Bitmap(256, histBitmapHeight);
+
+            // Legnagyobb értékek minden csatornához
+            int globalMax = Math.Max(histR.Max(), Math.Max(histG.Max(), histB.Max()));
+
+            using (Graphics g = Graphics.FromImage(histBitmap))
+            {
+                g.Clear(Color.Black);
+
+                // Piros hisztogram (felső panel)
+                for (int i = 0; i < 256; i++)
+                {
+                    int rHeight = histR[i] * panelHeight / globalMax;
+                    g.DrawLine(Pens.Red, i, panelHeight, i, panelHeight - rHeight);
+                }
+
+                // Zöld hisztogram (középső panel)
+                for (int i = 0; i < 256; i++)
+                {
+                    int gHeight = histG[i] * panelHeight / globalMax;
+                    g.DrawLine(Pens.Lime, i, panelHeight + panelHeight, i, panelHeight + panelHeight - gHeight);
+                }
+
+                // Kék hisztogram (alsó panel)
+                for (int i = 0; i < 256; i++)
+                {
+                    int bHeight = histB[i] * panelHeight / globalMax;
+                    g.DrawLine(Pens.Blue, i, panelHeight * 3, i, panelHeight * 3 - bHeight);
+                }
+            }
+
+            return histBitmap;
+        }
+
+        public static Bitmap EqualizeHistogram(Bitmap sourceImage)
 		{
 			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
