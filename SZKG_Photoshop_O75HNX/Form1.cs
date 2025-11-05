@@ -27,7 +27,13 @@ namespace SZKG_Photoshop_O75HNX
 				AdjustGroupBoxAndButton(groupBox12, button12);
 			};
 
-			string imagePath = Path.Combine(Application.StartupPath, "defaultimg.jpg");
+			string basepath = AppContext.BaseDirectory;
+			for (int i = 0; i < 4; i++)
+			{
+				basepath = Directory.GetParent(basepath)!.FullName;
+			} 
+
+			string imagePath = basepath + "\\images\\defaultimg.jpg";
 
 			if (File.Exists(imagePath))
 			{
