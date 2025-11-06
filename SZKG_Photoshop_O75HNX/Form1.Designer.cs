@@ -38,7 +38,7 @@ namespace SZKG_Photoshop_O75HNX
             flowLayoutPanel1 = new FlowLayoutPanel();
 
             string imgSizePrefix = "Image size: ";
-            imgSizeLabel = CreateLabel(imgSizePrefix);
+            imgSizeLabel = CreateLabel(0, imgSizePrefix);
             button1 = CreateButton("Load", button1_Click);
             groupBox1 = CreateGroupBox(button1);
             groupBox1.Controls.Add(imgSizeLabel);
@@ -49,19 +49,19 @@ namespace SZKG_Photoshop_O75HNX
             button3 = CreateButton("Invert", button3_Click);
             groupBox3 = CreateGroupBox(button3);
 
-            string gammaValuePrefix = "Gamma value: ";
+            string gammaValuePrefix = "Gamma: ";
             button4 = CreateButton("GammaCorrect", button4_Click);
             groupBox4 = CreateGroupBox(button4);
-            var gammaLabel = CreateLabel(gammaValue.ToString(), gammaValuePrefix);
+            var gammaLabel = CreateLabel(gammaValue, gammaValuePrefix);
             var gammaTrackBar = CreateParameterTrackBar(value => gammaValue = value, gammaLabel, 0.1, 10, 0.1, 1, gammaValuePrefix);
             groupBox4.Controls.Add(gammaLabel);
             groupBox4.Controls.Add(gammaTrackBar);
 
-            string cValuePrefix = "C value: ";
+            string cValuePrefix = "C: ";
             button5 = CreateButton("LogTransform", button5_Click);
             groupBox5 = CreateGroupBox(button5);
-            var cLabel = CreateLabel(cValue.ToString(), cValuePrefix);
-            var cTrackBar = CreateParameterTrackBar(value => cValue = value, cLabel, 5, 100, 1, 46, cValuePrefix);
+            var cLabel = CreateLabel(cValue, cValuePrefix);
+            var cTrackBar = CreateParameterTrackBar(value => cValue = (int)value, cLabel, 5, 100, 1, 46, cValuePrefix);
             groupBox5.Controls.Add(cLabel);
             groupBox5.Controls.Add(cTrackBar);
 
@@ -74,10 +74,10 @@ namespace SZKG_Photoshop_O75HNX
             button8 = CreateButton("EqualizeHist", button8_Click);
             groupBox8 = CreateGroupBox(button8);
 
-            string k1ValuePrefix = "Kernel size: ";
+            string k1ValuePrefix = "Kernel: ";
             button9 = CreateButton("BoxFilter", button9_Click);
             groupBox9 = CreateGroupBox(button9);
-            var k1Label = CreateLabel(k1Value.ToString(), k1ValuePrefix);
+            var k1Label = CreateLabel(k1Value, k1ValuePrefix);
             var k1TrackBar = CreateParameterTrackBar(value => k1Value = (int)value, k1Label, 1, 15, 2, 3, k1ValuePrefix);
             groupBox9.Controls.Add(k1Label);
             groupBox9.Controls.Add(k1TrackBar);
@@ -254,17 +254,17 @@ namespace SZKG_Photoshop_O75HNX
             {
                 double value = min + trackBar.Value * step;
                 onValueChanged(value);
-                label.Text = $"{labelPrefix}: {value:F1}";
+                label.Text = $"{labelPrefix}{Math.Round(value,1)}";
             };
 
             return trackBar;
         }
 
-        private Label CreateLabel(string defaultValue, string labelPrefix = "")
+        private Label CreateLabel(double defaultValue, string labelPrefix = "")
         {
             var label = new Label
             {
-                Text = $"{labelPrefix}: {defaultValue}",
+                Text = $"{labelPrefix}{Math.Round(defaultValue, 1)}",
                 AutoSize = true
             };
 
@@ -293,7 +293,7 @@ namespace SZKG_Photoshop_O75HNX
 
         private GroupBox groupBox5;
         private Button button5;
-        public double cValue = 46.0;
+        public int cValue = 46;
 
         private GroupBox groupBox6;
         private Button button6;

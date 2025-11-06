@@ -84,7 +84,7 @@ namespace SZKG_Photoshop_O75HNX
 			return srcImage;
 		}
 
-		public static Bitmap ApplyLogTransform(Bitmap srcImage, double c = 1)
+		public static Bitmap ApplyLogTransform(Bitmap srcImage, int c = 1)
 		{
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
