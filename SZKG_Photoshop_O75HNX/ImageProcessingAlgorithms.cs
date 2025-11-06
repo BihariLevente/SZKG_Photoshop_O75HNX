@@ -169,45 +169,83 @@ namespace SZKG_Photoshop_O75HNX
             int[] histG = new int[256];
             int[] histB = new int[256];
 
-            // Hisztogram számolása
-            for (int y = 0; y < height; y++)
+            BitmapData bmData = sourceImage.LockBits(
+                new Rectangle(0, 0, width, height),
+                ImageLockMode.ReadOnly,
+                PixelFormat.Format24bppRgb);
+
+            int stride = bmData.Stride;
+            IntPtr scan0 = bmData.Scan0;
+
+            unsafe
             {
-                for (int x = 0; x < width; x++)
+                byte* pBase = (byte*)scan0;
+                int rowBytes = width * 3;
+
+                int processorCount = Environment.ProcessorCount;
+                int[][] localR = new int[processorCount][];
+                int[][] localG = new int[processorCount][];
+                int[][] localB = new int[processorCount][];
+
+                for (int i = 0; i < processorCount; i++)
                 {
-                    Color pixel = sourceImage.GetPixel(x, y);
-                    histR[pixel.R]++;
-                    histG[pixel.G]++;
-                    histB[pixel.B]++;
+                    localR[i] = new int[256];
+                    localG[i] = new int[256];
+                    localB[i] = new int[256];
+                }
+
+                System.Threading.Tasks.Parallel.For(0, height, new ParallelOptions { MaxDegreeOfParallelism = processorCount }, y =>
+                {
+                    int threadIndex = Thread.GetCurrentProcessorId() % processorCount;
+                    byte* p = pBase + y * stride;
+
+                    for (int x = 0; x < rowBytes; x += 3)
+                    {
+                        byte b = p[x];
+                        byte g = p[x + 1];
+                        byte r = p[x + 2];
+
+                        localR[threadIndex][r]++;
+                        localG[threadIndex][g]++;
+                        localB[threadIndex][b]++;
+                    }
+                });
+
+                for (int i = 0; i < processorCount; i++)
+                {
+                    for (int j = 0; j < 256; j++)
+                    {
+                        histR[j] += localR[i][j];
+                        histG[j] += localG[i][j];
+                        histB[j] += localB[i][j];
+                    }
                 }
             }
 
-            // Három panel magassága, egyenként 100 pixel
-            int panelHeight = 100;
+            sourceImage.UnlockBits(bmData);
+
+            int panelHeight = 150;
             int histBitmapHeight = panelHeight * 3;
             Bitmap histBitmap = new Bitmap(256, histBitmapHeight);
 
-            // Legnagyobb értékek minden csatornához
             int globalMax = Math.Max(histR.Max(), Math.Max(histG.Max(), histB.Max()));
 
             using (Graphics g = Graphics.FromImage(histBitmap))
             {
                 g.Clear(Color.Black);
 
-                // Piros hisztogram (felső panel)
                 for (int i = 0; i < 256; i++)
                 {
                     int rHeight = histR[i] * panelHeight / globalMax;
                     g.DrawLine(Pens.Red, i, panelHeight, i, panelHeight - rHeight);
                 }
 
-                // Zöld hisztogram (középső panel)
                 for (int i = 0; i < 256; i++)
                 {
                     int gHeight = histG[i] * panelHeight / globalMax;
-                    g.DrawLine(Pens.Lime, i, panelHeight + panelHeight, i, panelHeight + panelHeight - gHeight);
+                    g.DrawLine(Pens.Lime, i, panelHeight * 2, i, panelHeight * 2 - gHeight);
                 }
 
-                // Kék hisztogram (alsó panel)
                 for (int i = 0; i < 256; i++)
                 {
                     int bHeight = histB[i] * panelHeight / globalMax;
