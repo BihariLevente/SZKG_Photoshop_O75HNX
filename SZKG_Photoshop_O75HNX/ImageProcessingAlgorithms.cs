@@ -123,37 +123,42 @@ namespace SZKG_Photoshop_O75HNX
 			return sourceImage;
 		}
 
-		public static Bitmap ConvertToGrayscale(Bitmap sourceImage)
-		{
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
-				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+        public static Bitmap ConvertToGrayscale(Bitmap sourceImage)
+        {
+            int imgWidth = sourceImage.Width;
+            int imgHeight = sourceImage.Height;
 
-			int stride = bmData.Stride;
-			System.IntPtr Scan0 = bmData.Scan0;
-			unsafe
-			{
-				byte* p = (byte*)(void*)Scan0;
-				int nOffset = stride - bmData.Width * 3;
-				byte red, green, blue;
+            BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, imgWidth, imgHeight),
+                ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
-				for (int y = 0; y < bmData.Height; ++y)
-				{
-					for (int x = 0; x < bmData.Width; ++x)
-					{
-						blue = p[0];
-						green = p[1];
-						red = p[2];
+            int stride = bmData.Stride;
+            IntPtr scan0 = bmData.Scan0;
 
-						p[0] = p[1] = p[2] = (byte)(0.299 * red + 0.587 * green + 0.114 * blue);
-						p += 3;
-					}
-					p += nOffset;
-				}
-			}
+            unsafe
+            {
+                byte* pBase = (byte*)scan0;
+                int rowBytes = imgWidth * 3;
 
-			sourceImage.UnlockBits(bmData);
-			return sourceImage;
-		}
+                System.Threading.Tasks.Parallel.For(0, imgHeight, y =>
+                {
+                    byte* p = pBase + y * stride;
+
+                    for (int x = 0; x < rowBytes; x += 3)
+                    {
+                        byte blue = p[x];
+                        byte green = p[x + 1];
+                        byte red = p[x + 2];
+
+                        byte gray = (byte)(0.299 * red + 0.587 * green + 0.114 * blue);
+
+                        p[x] = p[x + 1] = p[x + 2] = gray;
+                    }
+                });
+            }
+
+            sourceImage.UnlockBits(bmData);
+            return sourceImage;
+        }
 
         public static Bitmap ComputeHistogram(Bitmap sourceImage)
         {
