@@ -11,22 +11,21 @@ namespace SZKG_Photoshop_O75HNX
 {
 	public class ImageProcessingAlgorithms
 	{
-		public static Bitmap InvertImage(Bitmap sourceImage)
+		public static Bitmap InvertImage(Bitmap srcImage)
 		{
-			int imgWidthPix = sourceImage.Width;
-			int imgHeightPix = sourceImage.Height;
+			int imgWidthPix = srcImage.Width;
+			int imgHeightPix = srcImage.Height;
 
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix), 
+			BitmapData bmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix), 
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
-			// teljes sorhossz (stride) = nWidth (hasznos bájtok száma) + nOffset (igazítás 4 byte-ra)
-			int stride = bmData.Stride;
-			IntPtr Scan0 = bmData.Scan0;
+            // teljes sorhossz (stride) = nWidth (hasznos bájtok száma) + nOffset (igazítás 4 byte-ra)
+            int stride = bmData.Stride;
 
-			unsafe
+            unsafe
 			{
-				byte* pBase = (byte*)(void*)Scan0;
-				int rowBytes = imgWidthPix * 3;
+                byte* pBase = (byte*)bmData.Scan0;
+                int rowBytes = imgWidthPix * 3;
 				//int nOffset = stride - nWidth;
 
 				System.Threading.Tasks.Parallel.For(0, imgHeightPix, x =>
@@ -41,14 +40,15 @@ namespace SZKG_Photoshop_O75HNX
 				});
 			}
 
-			sourceImage.UnlockBits(bmData);
-			return sourceImage;
+			srcImage.UnlockBits(bmData);
+
+			return srcImage;
 		}
 
-		public static Bitmap ApplyGammaCorrection(Bitmap sourceImage, double gamma = 1)
+		public static Bitmap ApplyGammaCorrection(Bitmap srcImage, double gamma = 1)
 		{
-			int imgWidth = sourceImage.Width;
-			int imgHeight = sourceImage.Height;
+			int imgWidthPix = srcImage.Width;
+			int imgHeightPix = srcImage.Height;
 
 			// Gamma LUT (look up table)
 			byte[] gammaLUT = new byte[256];
@@ -58,18 +58,17 @@ namespace SZKG_Photoshop_O75HNX
 				gammaLUT[i] = (byte)Math.Min(255, (int)(255.0 * Math.Pow(i / 255.0, gamma))); // g(x,y) = 255 * (f(x,y) / 255)^gamma
 			}
 
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, imgWidth, imgHeight), 
+			BitmapData bmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix), 
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
 			int stride = bmData.Stride;
-			IntPtr scan0 = bmData.Scan0;
 
 			unsafe
 			{
-				byte* pBase = (byte*)scan0;
-				int rowBytes = imgWidth * 3;
+				byte* pBase = (byte*)bmData.Scan0;
+				int rowBytes = imgWidthPix * 3;
 
-				System.Threading.Tasks.Parallel.For(0, imgHeight, y =>
+				System.Threading.Tasks.Parallel.For(0, imgHeightPix, y =>
 				{
 					byte* p = pBase + y * stride;
 
@@ -80,14 +79,15 @@ namespace SZKG_Photoshop_O75HNX
 				});
 			}
 
-			sourceImage.UnlockBits(bmData);
-			return sourceImage;
+			srcImage.UnlockBits(bmData);
+
+			return srcImage;
 		}
 
-		public static Bitmap ApplyLogTransform(Bitmap sourceImage, double c = 1)
+		public static Bitmap ApplyLogTransform(Bitmap srcImage, double c = 1)
 		{
-			int imgWidth = sourceImage.Width;
-			int imgHeight = sourceImage.Height;
+			int imgWidthPix = srcImage.Width;
+			int imgHeightPix = srcImage.Height;
 
 			// Gamma LUT (look up table)
 			byte[] logLUT = new byte[256];
@@ -97,18 +97,17 @@ namespace SZKG_Photoshop_O75HNX
 				logLUT[i] = (byte)Math.Min(255, (c * Math.Log(1 + i))); // g(x,y) = c * log(1 + f(x,y))
 			}
 
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, imgWidth, imgHeight),
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
-			int stride = bmData.Stride;
-			IntPtr scan0 = bmData.Scan0;
+			int stride = srcBmData.Stride;
 
 			unsafe
 			{
-				byte* pBase = (byte*)scan0;
-				int rowBytes = imgWidth * 3;
+				byte* pBase = (byte*)srcBmData.Scan0;
+				int rowBytes = imgWidthPix * 3;
 
-				System.Threading.Tasks.Parallel.For(0, imgHeight, y =>
+				System.Threading.Tasks.Parallel.For(0, imgHeightPix, y =>
 				{
 					byte* p = pBase + y * stride;
 
@@ -119,27 +118,27 @@ namespace SZKG_Photoshop_O75HNX
 				});
 			}
 
-			sourceImage.UnlockBits(bmData);
-			return sourceImage;
+			srcImage.UnlockBits(srcBmData);
+
+			return srcImage;
 		}
 
-        public static Bitmap ConvertToGrayscale(Bitmap sourceImage)
+        public static Bitmap ConvertToGrayscale(Bitmap srcImage)
         {
-            int imgWidth = sourceImage.Width;
-            int imgHeight = sourceImage.Height;
+            int imgWidthPix = srcImage.Width;
+            int imgHeightPix = srcImage.Height;
 
-            BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, imgWidth, imgHeight),
+            BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
                 ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
-            int stride = bmData.Stride;
-            IntPtr scan0 = bmData.Scan0;
+            int stride = srcBmData.Stride;
 
             unsafe
             {
-                byte* pBase = (byte*)scan0;
-                int rowBytes = imgWidth * 3;
+                byte* pBase = (byte*)srcBmData.Scan0;
+                int rowBytes = imgWidthPix * 3;
 
-                System.Threading.Tasks.Parallel.For(0, imgHeight, y =>
+                System.Threading.Tasks.Parallel.For(0, imgHeightPix, y =>
                 {
                     byte* p = pBase + y * stride;
 
@@ -156,31 +155,28 @@ namespace SZKG_Photoshop_O75HNX
                 });
             }
 
-            sourceImage.UnlockBits(bmData);
-            return sourceImage;
+            srcImage.UnlockBits(srcBmData);
+
+            return srcImage;
         }
 
-        public static Bitmap ComputeHistogram(Bitmap sourceImage)
+        public static (int[], int[], int[]) ComputeHistogram(Bitmap srcImage)
         {
-            int width = sourceImage.Width;
-            int height = sourceImage.Height;
+            int imgWidthPix = srcImage.Width;
+            int imgHeightPix = srcImage.Height;
 
             int[] histR = new int[256];
             int[] histG = new int[256];
             int[] histB = new int[256];
 
-            BitmapData bmData = sourceImage.LockBits(
-                new Rectangle(0, 0, width, height),
-                ImageLockMode.ReadOnly,
-                PixelFormat.Format24bppRgb);
+            BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
 
-            int stride = bmData.Stride;
-            IntPtr scan0 = bmData.Scan0;
+            int stride = srcBmData.Stride;
 
             unsafe
             {
-                byte* pBase = (byte*)scan0;
-                int rowBytes = width * 3;
+                byte* pBase = (byte*)srcBmData.Scan0;
+                int rowBytes = imgWidthPix * 3;
 
                 int processorCount = Environment.ProcessorCount;
                 int[][] localR = new int[processorCount][];
@@ -194,7 +190,7 @@ namespace SZKG_Photoshop_O75HNX
                     localB[i] = new int[256];
                 }
 
-                System.Threading.Tasks.Parallel.For(0, height, new ParallelOptions { MaxDegreeOfParallelism = processorCount }, y =>
+                System.Threading.Tasks.Parallel.For(0, imgHeightPix, new ParallelOptions { MaxDegreeOfParallelism = processorCount }, y =>
                 {
                     int threadIndex = Thread.GetCurrentProcessorId() % processorCount;
                     byte* p = pBase + y * stride;
@@ -222,15 +218,77 @@ namespace SZKG_Photoshop_O75HNX
                 }
             }
 
-            sourceImage.UnlockBits(bmData);
+            srcImage.UnlockBits(srcBmData);
 
-            int panelHeight = 150;
+            return (histR, histG, histB);
+        }
+
+        public static (int[], int[], int[]) EqualizeHistogram(int[] histR, int[] histG, int[] histB)
+		{
+            int L = 256;
+            int totalPixelsR = histR.Sum();
+            int totalPixelsG = histG.Sum();
+            int totalPixelsB = histB.Sum();
+
+            double[] pR = new double[L];
+            double[] pG = new double[L];
+            double[] pB = new double[L];
+
+            for (int i = 0; i < L; i++)
+            {
+                pR[i] = (double)histR[i] / totalPixelsR;
+                pG[i] = (double)histG[i] / totalPixelsG;
+                pB[i] = (double)histB[i] / totalPixelsB;
+            }
+
+            double[] cdfR = new double[L];
+            double[] cdfG = new double[L];
+            double[] cdfB = new double[L];
+
+            cdfR[0] = pR[0];
+            cdfG[0] = pG[0];
+            cdfB[0] = pB[0];
+
+            for (int i = 1; i < L; i++)
+            {
+                cdfR[i] = cdfR[i - 1] + pR[i];
+                cdfG[i] = cdfG[i - 1] + pG[i];
+                cdfB[i] = cdfB[i - 1] + pB[i];
+            }
+
+            int[] mapR = new int[L];
+            int[] mapG = new int[L];
+            int[] mapB = new int[L];
+
+            for (int i = 0; i < L; i++)
+            {
+                mapR[i] = (int)Math.Round((L - 1) * cdfR[i]);
+                mapG[i] = (int)Math.Round((L - 1) * cdfG[i]);
+                mapB[i] = (int)Math.Round((L - 1) * cdfB[i]);
+            }
+
+            int[] eqHistR = new int[L];
+            int[] eqHistG = new int[L];
+            int[] eqHistB = new int[L];
+
+            for (int i = 0; i < L; i++)
+            {
+                eqHistR[mapR[i]] += histR[i];
+                eqHistG[mapG[i]] += histG[i];
+                eqHistB[mapB[i]] += histB[i];
+            }
+
+            return (eqHistR, eqHistG, eqHistB);
+        }
+
+        public static Bitmap ShowHistogram(int[] histR, int[] histG, int[] histB, int panelHeight = 150)
+        {
             int histBitmapHeight = panelHeight * 3;
-            Bitmap histBitmap = new Bitmap(256, histBitmapHeight);
+            Bitmap histImage = new Bitmap(256, histBitmapHeight);
 
             int globalMax = Math.Max(histR.Max(), Math.Max(histG.Max(), histB.Max()));
 
-            using (Graphics g = Graphics.FromImage(histBitmap))
+            using (Graphics g = Graphics.FromImage(histImage))
             {
                 g.Clear(Color.Black);
 
@@ -253,32 +311,72 @@ namespace SZKG_Photoshop_O75HNX
                 }
             }
 
-            return histBitmap;
+            return histImage;
         }
 
-        public static Bitmap EqualizeHistogram(Bitmap sourceImage)
-		{
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
-				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+        public static Bitmap ApplyBoxFilter(Bitmap srcImage, int kernelSize = 3)
+        {
+            int imgWidthPix = srcImage.Width;
+            int imgHeightPix = srcImage.Height;
 
-			//TODO: 
+            Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format24bppRgb);
 
-			sourceImage.UnlockBits(bmData);
-			return sourceImage;
-		}
+            BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+                ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
 
-		public static Bitmap ApplyBoxFilter(Bitmap sourceImage)
-		{
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
-				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+            BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+                ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
 
-			//TODO: 
+            int stride = srcBmData.Stride;
 
-			sourceImage.UnlockBits(bmData);
-			return sourceImage;
-		}
+            unsafe
+            {
+                byte* pSrcBase = (byte*)srcBmData.Scan0;
+                byte* pDstBase = (byte*)dstBmData.Scan0;
+                int offset = kernelSize / 2;
 
-		public static Bitmap ApplyGaussianFilter(Bitmap sourceImage)
+                Parallel.For(0, imgHeightPix, y =>
+                {
+                    for (int x = 0; x < imgWidthPix; x++)
+                    {
+                        int sumR = 0, sumG = 0, sumB = 0;
+                        int count = 0;
+
+                        for (int fy = -offset; fy <= offset; fy++)
+                        {
+                            int iy = y + fy;
+                            if (iy < 0 || iy >= imgHeightPix) continue;
+
+                            byte* pRow = pSrcBase + iy * stride;
+
+                            for (int fx = -offset; fx <= offset; fx++)
+                            {
+                                int ix = x + fx;
+                                if (ix < 0 || ix >= imgWidthPix) continue;
+
+                                byte* pPixel = pRow + ix * 3;
+                                sumB += pPixel[0];
+                                sumG += pPixel[1];
+                                sumR += pPixel[2];
+                                count++;
+                            }
+                        }
+
+                        byte* pDstPixel = pDstBase + y * stride + x * 3;
+                        pDstPixel[0] = (byte)(sumB / count);
+                        pDstPixel[1] = (byte)(sumG / count);
+                        pDstPixel[2] = (byte)(sumR / count);
+                    }
+                });
+            }
+
+            srcImage.UnlockBits(srcBmData);
+            dstImage.UnlockBits(dstBmData);
+
+            return dstImage;
+        }
+
+        public static Bitmap ApplyGaussianFilter(Bitmap sourceImage)
 		{
 			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
