@@ -9,7 +9,7 @@ namespace SZKG_Photoshop_O75HNX
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
-                        // BGR!!!
+            // BGR!!!
 			BitmapData bmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix), 
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
@@ -20,17 +20,14 @@ namespace SZKG_Photoshop_O75HNX
             unsafe
 			{
                 byte* pBase = (byte*)bmData.Scan0;
-				//int nOffset = stride - nWidth;
 
 				Parallel.For(0, imgHeightPix, x =>
 				{
 					byte* p = pBase + x * stride; // új sor
 
-					for (int y = 0; y < rowBytes; ++y)
+					for (int y = 0; y < rowBytes; y++)
 					{
-                        //TODO: megnézni hogy y-al indexeljük-e
-						p[0] = (byte)(255 - p[0]);
-						++p;
+						p[y] = (byte)(255 - p[y]);
 					}
 				});
 			}
