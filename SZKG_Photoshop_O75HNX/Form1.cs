@@ -52,8 +52,6 @@ namespace SZKG_Photoshop_O75HNX
 		{
             groupBox.Height = flowLayoutPanel1.Height - 3;
             groupBox.Width = (flowLayoutPanel1.Width - 75) / 14;
-            //button.Left = (groupBox.ClientSize.Width - button.Width) / 2;
-            //button.Top = (int)((groupBox.ClientSize.Height - button.Height) * 0.95);
         }
 
 		private void RunImageProcessingWithTimer(Action action, string methodName)
@@ -121,9 +119,11 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				RunImageProcessingWithTimer(() =>
+                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+
+                RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.InvertImage(new Bitmap(pictureBox1.Image));
+					pictureBox2.Image = ImageProcessingAlgorithms.InvertImage(bmImage);
 				}, "InvertImage");
 			}
 		}
@@ -132,9 +132,11 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				RunImageProcessingWithTimer(() =>
+                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+
+                RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGammaCorrection(new Bitmap(pictureBox1.Image), gammaValue);
+					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGammaCorrection(bmImage, gammaValue);
 				}, "ApplyGammaCorrection");
 			}
 		}
@@ -143,9 +145,11 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				RunImageProcessingWithTimer(() =>
+                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+
+                RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ApplyLogTransform(new Bitmap(pictureBox1.Image), cValue);
+					pictureBox2.Image = ImageProcessingAlgorithms.ApplyLogTransform(bmImage, cValue);
 				}, "ApplyLogTransform");
 			}
 		}
@@ -154,9 +158,11 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				RunImageProcessingWithTimer(() =>
+                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+
+                RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ConvertToGrayscale(new Bitmap(pictureBox1.Image));
+					pictureBox2.Image = ImageProcessingAlgorithms.ConvertToGrayscale(bmImage);
 				}, "ConvertToGrayscale");
 			}
 		}
@@ -165,11 +171,16 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
+				Bitmap bmImage = new Bitmap(pictureBox1.Image);
+
                 RunImageProcessingWithTimer(() =>
 				{
-                    (histR, histG, histB) = ImageProcessingAlgorithms.ComputeHistogram(new Bitmap(pictureBox1.Image));
-                    pictureBox2.Image = ImageProcessingAlgorithms.ShowHistogram(histR, histG, histB, 150);
+                    (histR, histG, histB) = ImageProcessingAlgorithms.ComputeHistogram(bmImage);
                 }, "ComputeHistogram");
+                RunImageProcessingWithTimer(() =>
+                {
+                    ImageProcessingAlgorithms.ShowHistogram(histR, histG, histB, "Histrogram");
+                }, "ShowHistogram");
             }
 		}
 
@@ -180,8 +191,8 @@ namespace SZKG_Photoshop_O75HNX
                 RunImageProcessingWithTimer(() =>
                 {
                     (histR, histG, histB) = ImageProcessingAlgorithms.EqualizeHistogram(histR, histG, histB);
-                    pictureBox2.Image = ImageProcessingAlgorithms.ShowHistogram(histR, histG, histB, 150);
-                }, "EqualizeHistogram");
+                    ImageProcessingAlgorithms.ShowHistogram(histR, histG, histB, "Equalized Histrogram");
+                }, "ShowEqualizedHistogram");
             }
             else
             {
@@ -193,9 +204,11 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				RunImageProcessingWithTimer(() =>
+                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+
+                RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ApplyBoxFilter(new Bitmap(pictureBox1.Image), k1Value);
+					pictureBox2.Image = ImageProcessingAlgorithms.ApplyBoxFilter(bmImage, k1Value);
 				}, "ApplyBoxFilter");
 			}
 		}
@@ -204,9 +217,11 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				RunImageProcessingWithTimer(() =>
+                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+
+                RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGaussianFilter(new Bitmap(pictureBox1.Image));
+					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGaussianFilter(bmImage);
 				}, "ApplyGaussianFilter");
 			}
 		}
@@ -215,9 +230,11 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				RunImageProcessingWithTimer(() =>
+                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+
+                RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ApplySobelEdgeDetection(new Bitmap(pictureBox1.Image));
+					pictureBox2.Image = ImageProcessingAlgorithms.ApplySobelEdgeDetection(bmImage);
 				}, "ApplySobelEdgeDetection");
 			}
 		}
@@ -226,9 +243,11 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				RunImageProcessingWithTimer(() =>
+                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+
+                RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ApplyLaplacianEdgeDetection(new Bitmap(pictureBox1.Image));
+					pictureBox2.Image = ImageProcessingAlgorithms.ApplyLaplacianEdgeDetection(bmImage);
 				}, "ApplyLaplacianEdgeDetection");
 			}
 		}
@@ -237,9 +256,11 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				RunImageProcessingWithTimer(() =>
+                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+
+                RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.DetectKeypoints(new Bitmap(pictureBox1.Image));
+					pictureBox2.Image = ImageProcessingAlgorithms.DetectKeypoints(bmImage);
 				}, "DetectKeypoints");
 			}
 		}

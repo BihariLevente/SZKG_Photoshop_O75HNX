@@ -1,39 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing.Imaging;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+﻿using System.Drawing.Imaging;
 
 namespace SZKG_Photoshop_O75HNX
 {
-	public class ImageProcessingAlgorithms
+    public class ImageProcessingAlgorithms
 	{
 		public static Bitmap InvertImage(Bitmap srcImage)
 		{
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
+                        // BGR!!!
 			BitmapData bmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix), 
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
             // teljes sorhossz (stride) = nWidth (hasznos bájtok száma) + nOffset (igazítás 4 byte-ra)
             int stride = bmData.Stride;
+            int rowBytes = imgWidthPix * 3;
 
             unsafe
 			{
                 byte* pBase = (byte*)bmData.Scan0;
-                int rowBytes = imgWidthPix * 3;
 				//int nOffset = stride - nWidth;
 
-				System.Threading.Tasks.Parallel.For(0, imgHeightPix, x =>
+				Parallel.For(0, imgHeightPix, x =>
 				{
 					byte* p = pBase + x * stride; // új sor
 
 					for (int y = 0; y < rowBytes; ++y)
 					{
+                        //TODO: megnézni hogy y-al indexeljük-e
 						p[0] = (byte)(255 - p[0]);
 						++p;
 					}
@@ -62,19 +57,19 @@ namespace SZKG_Photoshop_O75HNX
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
 			int stride = bmData.Stride;
+            int rowBytes = imgWidthPix * 3;
 
-			unsafe
-			{
+            unsafe
+            {
 				byte* pBase = (byte*)bmData.Scan0;
-				int rowBytes = imgWidthPix * 3;
-
-				System.Threading.Tasks.Parallel.For(0, imgHeightPix, y =>
+				
+				Parallel.For(0, imgHeightPix, x =>
 				{
-					byte* p = pBase + y * stride;
+					byte* p = pBase + x * stride;
 
-					for (int x = 0; x < rowBytes; x++)
+					for (int y = 0; y < rowBytes; y++)
 					{
-						p[x] = gammaLUT[p[x]];
+						p[y] = gammaLUT[p[y]];
 					}
 				});
 			}
@@ -101,19 +96,19 @@ namespace SZKG_Photoshop_O75HNX
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
 			int stride = srcBmData.Stride;
+            int rowBytes = imgWidthPix * 3;
 
-			unsafe
+            unsafe
 			{
 				byte* pBase = (byte*)srcBmData.Scan0;
-				int rowBytes = imgWidthPix * 3;
 
-				System.Threading.Tasks.Parallel.For(0, imgHeightPix, y =>
+				Parallel.For(0, imgHeightPix, x =>
 				{
-					byte* p = pBase + y * stride;
+					byte* p = pBase + x * stride;
 
-					for (int x = 0; x < rowBytes; x++)
+					for (int y = 0; y < rowBytes; y++)
 					{
-						p[x] = logLUT[p[x]];
+						p[y] = logLUT[p[y]];
 					}
 				});
 			}
@@ -132,25 +127,25 @@ namespace SZKG_Photoshop_O75HNX
                 ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
             int stride = srcBmData.Stride;
+            int rowBytes = imgWidthPix * 3;
 
             unsafe
             {
                 byte* pBase = (byte*)srcBmData.Scan0;
-                int rowBytes = imgWidthPix * 3;
 
-                System.Threading.Tasks.Parallel.For(0, imgHeightPix, y =>
+                Parallel.For(0, imgHeightPix, x =>
                 {
-                    byte* p = pBase + y * stride;
+                    byte* p = pBase + x * stride;
 
-                    for (int x = 0; x < rowBytes; x += 3)
+                    for (int y = 0; y < rowBytes; y += 3)
                     {
-                        byte blue = p[x];
-                        byte green = p[x + 1];
-                        byte red = p[x + 2];
+                        byte blue = p[y];
+                        byte green = p[y + 1];
+                        byte red = p[y + 2];
 
                         byte gray = (byte)(0.299 * red + 0.587 * green + 0.114 * blue);
 
-                        p[x] = p[x + 1] = p[x + 2] = gray;
+                        p[y] = p[y + 1] = p[y + 2] = gray;
                     }
                 });
             }
@@ -160,7 +155,7 @@ namespace SZKG_Photoshop_O75HNX
             return srcImage;
         }
 
-        public static (int[], int[], int[]) ComputeHistogram(Bitmap srcImage)
+        public static (int[] histR, int[] histG, int[] histB) ComputeHistogram(Bitmap srcImage)
         {
             int imgWidthPix = srcImage.Width;
             int imgHeightPix = srcImage.Height;
@@ -169,19 +164,20 @@ namespace SZKG_Photoshop_O75HNX
             int[] histG = new int[256];
             int[] histB = new int[256];
 
-            BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+            BitmapData bmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+                ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
 
-            int stride = srcBmData.Stride;
+            int stride = bmData.Stride;
+            int rowBytes = imgWidthPix * 3;
 
             unsafe
             {
-                byte* pBase = (byte*)srcBmData.Scan0;
-                int rowBytes = imgWidthPix * 3;
+                byte* pBase = (byte*)bmData.Scan0;
 
                 int processorCount = Environment.ProcessorCount;
-                int[][] localR = new int[processorCount][];
-                int[][] localG = new int[processorCount][];
-                int[][] localB = new int[processorCount][];
+                var localR = new int[processorCount][];
+                var localG = new int[processorCount][];
+                var localB = new int[processorCount][];
 
                 for (int i = 0; i < processorCount; i++)
                 {
@@ -190,20 +186,25 @@ namespace SZKG_Photoshop_O75HNX
                     localB[i] = new int[256];
                 }
 
-                System.Threading.Tasks.Parallel.For(0, imgHeightPix, new ParallelOptions { MaxDegreeOfParallelism = processorCount }, y =>
+                Parallel.For(0, processorCount, i =>
                 {
-                    int threadIndex = Thread.GetCurrentProcessorId() % processorCount;
-                    byte* p = pBase + y * stride;
+                    int startX = i * imgHeightPix / processorCount;
+                    int endX = (i + 1) * imgHeightPix / processorCount;
 
-                    for (int x = 0; x < rowBytes; x += 3)
+                    int[] lr = localR[i];
+                    int[] lg = localG[i];
+                    int[] lb = localB[i];
+
+                    for (int x = startX; x < endX; x++)
                     {
-                        byte b = p[x];
-                        byte g = p[x + 1];
-                        byte r = p[x + 2];
+                        byte* p = pBase + x * stride;
 
-                        localR[threadIndex][r]++;
-                        localG[threadIndex][g]++;
-                        localB[threadIndex][b]++;
+                        for (int y = 0; y < rowBytes; y += 3)
+                        {
+                            lb[p[y]]++;
+                            lg[p[y + 1]]++;
+                            lr[p[y + 2]]++;
+                        }
                     }
                 });
 
@@ -218,8 +219,7 @@ namespace SZKG_Photoshop_O75HNX
                 }
             }
 
-            srcImage.UnlockBits(srcBmData);
-
+            srcImage.UnlockBits(bmData);
             return (histR, histG, histB);
         }
 
@@ -281,37 +281,55 @@ namespace SZKG_Photoshop_O75HNX
             return (eqHistR, eqHistG, eqHistB);
         }
 
-        public static Bitmap ShowHistogram(int[] histR, int[] histG, int[] histB, int panelHeight = 150)
+        public static void ShowHistogram(int[] histR, int[] histG, int[] histB, string titleText)
         {
-            int histBitmapHeight = panelHeight * 3;
-            Bitmap histImage = new Bitmap(256, histBitmapHeight);
-
-            int globalMax = Math.Max(histR.Max(), Math.Max(histG.Max(), histB.Max()));
-
-            using (Graphics g = Graphics.FromImage(histImage))
+            var histForm = new Form
             {
-                g.Clear(Color.Black);
+                Text = titleText,
+                WindowState = FormWindowState.Maximized
+            };
+
+            histForm.Paint += (s, e) =>
+            {
+                Graphics g = e.Graphics;
+                g.Clear(Color.White);
+
+                int width = histForm.ClientSize.Width;
+                int height = histForm.ClientSize.Height;
+
+                int rgbMax = Math.Max(histR.Max(), Math.Max(histG.Max(), histB.Max()));
+                int rgbWidth = width / histR.Length;
+                int barWidth = rgbWidth / 3;
+                int barSpacing = 1;
 
                 for (int i = 0; i < 256; i++)
                 {
-                    int rHeight = histR[i] * panelHeight / globalMax;
-                    g.DrawLine(Pens.Red, i, panelHeight, i, panelHeight - rHeight);
+                    int xStart = i * rgbWidth + 60;
+                    int heightScale = height - 60;
+
+                    // Red
+                    int rHeight = (int)((double)histR[i] / rgbMax * heightScale);
+                    int rY = height - rHeight - 15;
+                    g.FillRectangle(Brushes.Red, xStart, rY, barWidth, rHeight);
+
+                    // Green
+                    int gHeight = (int)((double)histG[i] / rgbMax * heightScale);
+                    int gY = height - gHeight - 15;
+                    g.FillRectangle(Brushes.Green, xStart + barWidth + barSpacing, gY, barWidth, gHeight);
+
+                    // Blue
+                    int bHeight = (int)((double)histB[i] / rgbMax * heightScale);
+                    int bY = height - bHeight - 15;
+                    g.FillRectangle(Brushes.Blue, xStart + 2 * (barWidth + barSpacing), bY, barWidth, bHeight);
                 }
 
-                for (int i = 0; i < 256; i++)
-                {
-                    int gHeight = histG[i] * panelHeight / globalMax;
-                    g.DrawLine(Pens.Lime, i, panelHeight * 2, i, panelHeight * 2 - gHeight);
-                }
+                Font font = new Font("Arial", 10, FontStyle.Bold);
+                string maxText = $"Max value: {rgbMax}";
+                SizeF textSize = g.MeasureString(maxText, font);
+                g.DrawString(maxText, font, Brushes.Black, (width - textSize.Width) / 2, 10);
+            };
 
-                for (int i = 0; i < 256; i++)
-                {
-                    int bHeight = histB[i] * panelHeight / globalMax;
-                    g.DrawLine(Pens.Blue, i, panelHeight * 3, i, panelHeight * 3 - bHeight);
-                }
-            }
-
-            return histImage;
+            histForm.Show();
         }
 
         public static Bitmap ApplyBoxFilter(Bitmap srcImage, int kernelSize = 3)
