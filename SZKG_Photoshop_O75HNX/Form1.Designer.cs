@@ -1,9 +1,6 @@
-﻿using System.Windows.Forms.VisualStyles;
-using static System.Net.Mime.MediaTypeNames;
-
-namespace SZKG_Photoshop_O75HNX
+﻿namespace SZKG_Photoshop_O75HNX
 {
-    partial class Form1
+	partial class Form1
     {
         /// <summary>
         ///  Required designer variable.
@@ -37,67 +34,60 @@ namespace SZKG_Photoshop_O75HNX
             pictureBox2 = new PictureBox();
             flowLayoutPanel1 = new FlowLayoutPanel();
 
-            string imgSizePrefix = "Image size: ";
+            string imgSizePrefix = "Image size:\n ";
             imgSizeLabel = CreateLabel(0, imgSizePrefix);
             button1 = CreateButton("Load", button1_Click);
-            groupBox1 = CreateGroupBox(button1);
-            groupBox1.Controls.Add(imgSizeLabel);
+            tablePanel1 = CreateTableLayoutPanel(imgSizeLabel, button1);
 
             button2 = CreateButton("Save", button2_Click);
-            groupBox2 = CreateGroupBox(button2);
+			tablePanel2 = CreateTableLayoutPanel(button2);
 
             button3 = CreateButton("Invert", button3_Click);
-            groupBox3 = CreateGroupBox(button3);
+			tablePanel3 = CreateTableLayoutPanel(button3);
 
-            string gammaValuePrefix = "Gamma: ";
+			string gammaValuePrefix = "Gamma: ";
             button4 = CreateButton("GammaCorrect", button4_Click);
-            groupBox4 = CreateGroupBox(button4);
             var gammaLabel = CreateLabel(gammaValue, gammaValuePrefix);
             var gammaTrackBar = CreateParameterTrackBar(value => gammaValue = value, gammaLabel, 0.1, 10, 0.1, 1, gammaValuePrefix);
-            groupBox4.Controls.Add(gammaLabel);
-            groupBox4.Controls.Add(gammaTrackBar);
+			tablePanel4 = CreateTableLayoutPanel(gammaLabel, gammaTrackBar, button4);
 
             string cValuePrefix = "C: ";
             button5 = CreateButton("LogTransform", button5_Click);
-            groupBox5 = CreateGroupBox(button5);
             var cLabel = CreateLabel(cValue, cValuePrefix);
             var cTrackBar = CreateParameterTrackBar(value => cValue = (int)value, cLabel, 5, 100, 1, 46, cValuePrefix);
-            groupBox5.Controls.Add(cLabel);
-            groupBox5.Controls.Add(cTrackBar);
+			tablePanel5 = CreateTableLayoutPanel(cLabel, cTrackBar, button5);
 
-            button6 = CreateButton("GrayScale", button6_Click);
-            groupBox6 = CreateGroupBox(button6);
+			button6 = CreateButton("GrayScale", button6_Click);
+			tablePanel6 = CreateTableLayoutPanel(button6);
 
-            button7 = CreateButton("ComputeHist", button7_Click);
-            groupBox7 = CreateGroupBox(button7);
+			button7 = CreateButton("ComputeHist", button7_Click);
+			tablePanel7 = CreateTableLayoutPanel(button7);
 
-            button8 = CreateButton("EqualizeHist", button8_Click);
-            groupBox8 = CreateGroupBox(button8);
+			button8 = CreateButton("EqualizeHist", button8_Click);
+			tablePanel8 = CreateTableLayoutPanel(button8);
 
-            string k1ValuePrefix = "Kernel: ";
+			string k1ValuePrefix = "Kernel: ";
             button9 = CreateButton("BoxFilter", button9_Click);
-            groupBox9 = CreateGroupBox(button9);
             var k1Label = CreateLabel(k1Value, k1ValuePrefix);
             var k1TrackBar = CreateParameterTrackBar(value => k1Value = (int)value, k1Label, 1, 15, 2, 3, k1ValuePrefix);
-            groupBox9.Controls.Add(k1Label);
-            groupBox9.Controls.Add(k1TrackBar);
+			tablePanel9 = CreateTableLayoutPanel(k1Label, k1TrackBar, button9);
 
-            button10 = CreateButton("GaussFilter", button10_Click);
-            groupBox10 = CreateGroupBox(button10);
+			button10 = CreateButton("GaussFilter", button10_Click);
+			tablePanel10 = CreateTableLayoutPanel(button10);
 
-            button11 = CreateButton("SobelEdge", button11_Click);
-            groupBox11 = CreateGroupBox(button11);
+			button11 = CreateButton("SobelEdge", button11_Click);
+			tablePanel11 = CreateTableLayoutPanel(button11);
 
-            button12 = CreateButton("LaplacianEdge", button12_Click);
-            groupBox12 = CreateGroupBox(button12);
+			button12 = CreateButton("LaplacianEdge", button12_Click);
+			tablePanel12 = CreateTableLayoutPanel(button12);
 
-            button13 = CreateButton("KeyPoints", button13_Click);
-            groupBox13 = CreateGroupBox(button13);
+			button13 = CreateButton("KeyPoints", button13_Click);
+			tablePanel13 = CreateTableLayoutPanel(button13);
 
-            button14 = CreateButton("Left <- Right", button14_Click);
-            groupBox14 = CreateGroupBox(button14);
+			button14 = CreateButton("Left <- Right", button14_Click);
+			tablePanel14 = CreateTableLayoutPanel(button14);
 
-            tableLayoutPanel1.SuspendLayout();
+			tableLayoutPanel1.SuspendLayout();
             tableLayoutPanel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
@@ -160,20 +150,20 @@ namespace SZKG_Photoshop_O75HNX
             // flowLayoutPanel1
             // 
             flowLayoutPanel1.AutoScroll = true;
-            flowLayoutPanel1.Controls.Add(groupBox1);
-            flowLayoutPanel1.Controls.Add(groupBox2);
-            flowLayoutPanel1.Controls.Add(groupBox3);
-            flowLayoutPanel1.Controls.Add(groupBox4);
-            flowLayoutPanel1.Controls.Add(groupBox5);
-            flowLayoutPanel1.Controls.Add(groupBox6);
-            flowLayoutPanel1.Controls.Add(groupBox7);
-            flowLayoutPanel1.Controls.Add(groupBox8);
-            flowLayoutPanel1.Controls.Add(groupBox9);
-            flowLayoutPanel1.Controls.Add(groupBox10);
-            flowLayoutPanel1.Controls.Add(groupBox11);
-            flowLayoutPanel1.Controls.Add(groupBox12);
-            flowLayoutPanel1.Controls.Add(groupBox13);
-            flowLayoutPanel1.Controls.Add(groupBox14);
+            flowLayoutPanel1.Controls.Add(tablePanel1);
+            flowLayoutPanel1.Controls.Add(tablePanel2);
+            flowLayoutPanel1.Controls.Add(tablePanel3);
+            flowLayoutPanel1.Controls.Add(tablePanel4);
+            flowLayoutPanel1.Controls.Add(tablePanel5);
+            flowLayoutPanel1.Controls.Add(tablePanel6);
+            flowLayoutPanel1.Controls.Add(tablePanel7);
+            flowLayoutPanel1.Controls.Add(tablePanel8);
+            flowLayoutPanel1.Controls.Add(tablePanel9);
+            flowLayoutPanel1.Controls.Add(tablePanel10);
+            flowLayoutPanel1.Controls.Add(tablePanel11);
+            flowLayoutPanel1.Controls.Add(tablePanel12);
+            flowLayoutPanel1.Controls.Add(tablePanel13);
+            flowLayoutPanel1.Controls.Add(tablePanel14);
             flowLayoutPanel1.Dock = DockStyle.Fill;
             flowLayoutPanel1.Location = new Point(0, 929);
             flowLayoutPanel1.Margin = new Padding(0);
@@ -218,7 +208,46 @@ namespace SZKG_Photoshop_O75HNX
             return groupBox;
         }
 
-        private Button CreateButton(string buttonName, EventHandler onClick)
+		private TableLayoutPanel CreateTableLayoutPanel(params Control[] controls)
+		{
+			var panel = new TableLayoutPanel
+			{
+				ColumnCount = 1,
+				AutoSize = false,
+				AutoSizeMode = AutoSizeMode.GrowAndShrink,
+				Margin = new Padding(0),
+				Padding = new Padding(0),
+				Dock = DockStyle.None
+			};
+			panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+			int dynamicCount = controls.Count(c => c is not Label);
+			float percentEach = dynamicCount > 0 ? 100f / dynamicCount : 0f;
+
+			panel.RowCount = controls.Length;
+
+			for (int i = 0; i < controls.Length; i++)
+			{
+				var c = controls[i];
+				c.Margin = new Padding(0);
+
+				c.Dock = (c is Label) ? DockStyle.Top : DockStyle.Fill;
+
+				if (c is Label)
+					panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+				else
+					panel.RowStyles.Add(new RowStyle(SizeType.Percent, percentEach));
+
+				panel.Controls.Add(c, 0, i);
+			}
+
+			if (dynamicCount > 0)
+				panel.Height = 50;
+
+			return panel;
+		}
+
+		private Button CreateButton(string buttonName, EventHandler onClick)
         {
             var button = new Button
             {
@@ -247,8 +276,8 @@ namespace SZKG_Photoshop_O75HNX
                 SmallChange = 1,
                 LargeChange = Math.Max(1, stepsCount / 10),
                 Dock = DockStyle.Top,
-                Width = 120,
-            };
+                Width = 120
+			};
 
             trackBar.Scroll += (s, e) =>
             {
@@ -264,7 +293,8 @@ namespace SZKG_Photoshop_O75HNX
         {
             var label = new Label
             {
-                Text = $"{labelPrefix}{Math.Round(defaultValue, 1)}",
+				TextAlign = System.Drawing.ContentAlignment.MiddleCenter,
+				Text = $"{labelPrefix}{Math.Round(defaultValue, 1)}",
                 AutoSize = true
             };
 
@@ -277,50 +307,50 @@ namespace SZKG_Photoshop_O75HNX
         private PictureBox pictureBox1;
         private PictureBox pictureBox2;
 
-        private GroupBox groupBox1;
+        private TableLayoutPanel tablePanel1;
         private Button button1;
         public Label imgSizeLabel;
 
-        private GroupBox groupBox2;
+        private TableLayoutPanel tablePanel2;
         private Button button2;
 
-        private GroupBox groupBox3;
+        private TableLayoutPanel tablePanel3;
         private Button button3;
 
-        private GroupBox groupBox4;
+        private TableLayoutPanel tablePanel4;
         private Button button4;
         public double gammaValue = 1.0;
 
-        private GroupBox groupBox5;
+        private TableLayoutPanel tablePanel5;
         private Button button5;
         public int cValue = 46;
 
-        private GroupBox groupBox6;
+        private TableLayoutPanel tablePanel6;
         private Button button6;
 
-        private GroupBox groupBox7;
+        private TableLayoutPanel tablePanel7;
         private Button button7;
 
-        private GroupBox groupBox8;
+        private TableLayoutPanel tablePanel8;
         private Button button8;
 
-        private GroupBox groupBox9;
+        private TableLayoutPanel tablePanel9;
         private Button button9;
         public int k1Value = 3;
 
-        private GroupBox groupBox10;
+        private TableLayoutPanel tablePanel10;
         private Button button10;
 
-        private GroupBox groupBox11;
+        private TableLayoutPanel tablePanel11;
         private Button button11;
 
-        private GroupBox groupBox12;
+        private TableLayoutPanel tablePanel12;
         private Button button12;
 
-        private GroupBox groupBox13;
+        private TableLayoutPanel tablePanel13;
         private Button button13;
 
-        private GroupBox groupBox14;
+        private TableLayoutPanel tablePanel14;
         private Button button14;
     }
 }

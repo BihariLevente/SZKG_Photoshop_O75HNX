@@ -17,20 +17,20 @@ namespace SZKG_Photoshop_O75HNX
 			// resize GroupBoxes
 			flowLayoutPanel1.Resize += (s, e) =>
 			{
-				AdjustGroupBoxAndButton(groupBox1, button1);
-				AdjustGroupBoxAndButton(groupBox2, button2);
-                AdjustGroupBoxAndButton(groupBox3, button3);
-				AdjustGroupBoxAndButton(groupBox4, button4);
-				AdjustGroupBoxAndButton(groupBox5, button5);
-				AdjustGroupBoxAndButton(groupBox6, button6);
-				AdjustGroupBoxAndButton(groupBox7, button7);
-				AdjustGroupBoxAndButton(groupBox8, button8);
-				AdjustGroupBoxAndButton(groupBox9, button9);
-				AdjustGroupBoxAndButton(groupBox10, button10);
-				AdjustGroupBoxAndButton(groupBox11, button11);
-				AdjustGroupBoxAndButton(groupBox12, button12);
-                AdjustGroupBoxAndButton(groupBox13, button13);
-                AdjustGroupBoxAndButton(groupBox14, button14);
+				AdjustGroupBoxAndButton(tablePanel1, button1);
+				AdjustGroupBoxAndButton(tablePanel2, button2);
+                AdjustGroupBoxAndButton(tablePanel3, button3);
+				AdjustGroupBoxAndButton(tablePanel4, button4);
+				AdjustGroupBoxAndButton(tablePanel5, button5);
+				AdjustGroupBoxAndButton(tablePanel6, button6);
+				AdjustGroupBoxAndButton(tablePanel7, button7);
+				AdjustGroupBoxAndButton(tablePanel8, button8);
+				AdjustGroupBoxAndButton(tablePanel9, button9);
+				AdjustGroupBoxAndButton(tablePanel10, button10);
+				AdjustGroupBoxAndButton(tablePanel11, button11);
+				AdjustGroupBoxAndButton(tablePanel12, button12);
+                AdjustGroupBoxAndButton(tablePanel13, button13);
+                AdjustGroupBoxAndButton(tablePanel14, button14);
             };
 
 			string basepath = AppContext.BaseDirectory;
@@ -44,15 +44,15 @@ namespace SZKG_Photoshop_O75HNX
 			if (File.Exists(imagePath))
 			{
 				pictureBox1.Image = Image.FromFile(imagePath);
-                imgSizeLabel.Text = $"Image size: ({pictureBox1.Image.Width}, {pictureBox1.Image.Height})";
+                imgSizeLabel.Text = $"Image size:\n ({pictureBox1.Image.Width}, {pictureBox1.Image.Height})";
             }
 		}
 
-		private void AdjustGroupBoxAndButton(GroupBox groupBox, Button button)
+		private void AdjustGroupBoxAndButton(TableLayoutPanel tablePanel, Button button)
 		{
-            groupBox.Height = flowLayoutPanel1.Height - 3;
-            groupBox.Width = (flowLayoutPanel1.Width - 75) / 14;
-        }
+			tablePanel.Height = flowLayoutPanel1.Height;
+			tablePanel.Width = flowLayoutPanel1.Width / 14;
+		}
 
 		private void RunImageProcessingWithTimer(Action action, string methodName)
 		{
