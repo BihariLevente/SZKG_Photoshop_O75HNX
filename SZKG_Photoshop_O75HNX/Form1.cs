@@ -191,9 +191,12 @@ namespace SZKG_Photoshop_O75HNX
                 RunImageProcessingWithTimer(() =>
                 {
                     (histR, histG, histB) = ImageProcessingAlgorithms.EqualizeHistogram(histR, histG, histB);
-                    ImageProcessingAlgorithms.ShowHistogram(histR, histG, histB, "Equalized Histrogram");
                 }, "ShowEqualizedHistogram");
-            }
+				RunImageProcessingWithTimer(() =>
+				{
+					ImageProcessingAlgorithms.ShowHistogram(histR, histG, histB, "Histrogram");
+				}, "ShowHistogram");
+			}
             else
             {
                 MessageBox.Show("The image histogram is empty. Cannot perform histogram equalization.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
