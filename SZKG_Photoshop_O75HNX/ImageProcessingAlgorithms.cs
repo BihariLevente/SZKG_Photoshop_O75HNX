@@ -69,10 +69,12 @@ namespace SZKG_Photoshop_O75HNX
 
 					for (int x = 0; x < imgWidthPix; x++)
 					{
-						byte b = (byte)pRow[0];
-						byte g = (byte)(pRow[0] >> 8); // >> biteltolás jobbra
-						byte r = (byte)(pRow[0] >> 16);
-						byte a = (byte)(pRow[0] >> 24);
+						uint currPixelValue = pRow[0];
+
+						byte b = (byte)currPixelValue;
+						byte g = (byte)(currPixelValue >> 8); // >> biteltolás jobbra
+						byte r = (byte)(currPixelValue >> 16);
+						byte a = (byte)(currPixelValue >> 24);
 
 						pRow[0] = ((uint)a << 24) | ((uint)gammaLUT[r] << 16) | ((uint)gammaLUT[g] << 8) | gammaLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
 
@@ -114,10 +116,12 @@ namespace SZKG_Photoshop_O75HNX
 
 					for (int x = 0; x < imgWidthPix; x++)
 					{
-						byte b = (byte)(pRow[0]);
-						byte g = (byte)(pRow[0] >> 8); // >> biteltolás jobbra
-						byte r = (byte)(pRow[0] >> 16);
-						byte a = (byte)(pRow[0] >> 24);
+						uint currPixelValue = pRow[0];
+
+						byte b = (byte)(currPixelValue);
+						byte g = (byte)(currPixelValue >> 8); // >> biteltolás jobbra
+						byte r = (byte)(currPixelValue >> 16);
+						byte a = (byte)(currPixelValue >> 24);
 
 						pRow[0] = ((uint)a << 24) | ((uint)logLUT[r] << 16) | ((uint)logLUT[g] << 8) | logLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
 
@@ -151,10 +155,12 @@ namespace SZKG_Photoshop_O75HNX
 
 					for (int x = 0; x < imgWidthPix; x++)
                     {
-						int b = (byte)(pRow[0]);
-						int g = (byte)(pRow[0] >> 8);
-						int r = (byte)(pRow[0] >> 16);
-						int a = (byte)(pRow[0] >> 24);
+						uint currPixelValue = pRow[0];
+
+						byte b = (byte)(currPixelValue);
+						byte g = (byte)(currPixelValue >> 8);
+						byte r = (byte)(currPixelValue >> 16);
+						byte a = (byte)(currPixelValue >> 24);
 
 						byte gray = (byte)((114 * b + 587 * g + 299 * r) / 1000);
 
@@ -180,7 +186,7 @@ namespace SZKG_Photoshop_O75HNX
             int[] histB = new int[256];
 
             BitmapData bmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-                ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+                ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
             int stride = bmData.Stride;
 
@@ -211,14 +217,21 @@ namespace SZKG_Photoshop_O75HNX
 
                     for (int y = startY; y < endY; y++)
                     {
-                        byte* pRow = pBase + y * stride;
+                        uint* pRow = (uint*)(pBase + y * stride);
 
                         for (int x = 0; x < imgWidthPix; x++)
                         {
-                            lb[pRow[0]]++;
-                            lg[pRow[1]]++;
-                            lr[pRow[2]]++;
-                            pRow += 3;
+							uint currPixelValue = pRow[0];
+
+							byte b = (byte)(currPixelValue);
+							byte g = (byte)(currPixelValue >> 8);
+							byte r = (byte)(currPixelValue >> 16);
+
+							lb[b]++;
+                            lg[g]++;
+                            lr[r]++;
+
+							pRow++;
                         }
                     }
                 });
