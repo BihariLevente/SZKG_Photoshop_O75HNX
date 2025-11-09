@@ -233,14 +233,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				bool isGrayscale = false;
                 Bitmap bmImage = new Bitmap(pictureBox1.Image);
-
-				RunImageProcessingWithTimer(() =>
-				{
-					isGrayscale = ImageProcessingAlgorithms.IsGrayscale(bmImage);
-				}, "IsGrayscale");
-				if (isGrayscale)
+			
+				if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
 				{
 					RunImageProcessingWithTimer(() =>
 					{
@@ -249,7 +244,7 @@ namespace SZKG_Photoshop_O75HNX
 				}
 				else
 				{
-					MessageBox.Show("Image is not grayscale!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					MessageBox.Show("This function can only run on grayscale images.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				}
 			}
 		}
@@ -260,10 +255,17 @@ namespace SZKG_Photoshop_O75HNX
 			{
                 Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
-                RunImageProcessingWithTimer(() =>
+				if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ApplyLaplacianEdgeDetection(bmImage);
-				}, "ApplyLaplacianEdgeDetection");
+					RunImageProcessingWithTimer(() =>
+					{
+						pictureBox2.Image = ImageProcessingAlgorithms.ApplyLaplacianEdgeDetection(bmImage);
+					}, "ApplyLaplacianEdgeDetection");
+				}
+				else
+				{
+					MessageBox.Show("This function can only run on grayscale images.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				}
 			}
 		}
 
@@ -273,10 +275,17 @@ namespace SZKG_Photoshop_O75HNX
 			{
                 Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
-                RunImageProcessingWithTimer(() =>
+				if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.DetectKeypoints(bmImage);
-				}, "DetectKeypoints");
+					RunImageProcessingWithTimer(() =>
+					{
+						pictureBox2.Image = ImageProcessingAlgorithms.DetectKeypoints(bmImage);
+					}, "DetectKeypoints");
+				}
+				else
+				{
+					MessageBox.Show("This function can only run on grayscale images.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				}
 			}
 		}
 
