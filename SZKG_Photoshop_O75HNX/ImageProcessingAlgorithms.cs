@@ -21,13 +21,13 @@ namespace SZKG_Photoshop_O75HNX
 			{
                 byte* pBase = (byte*)bmData.Scan0;
 
-				Parallel.For(0, imgHeightPix, x =>
+				Parallel.For(0, imgHeightPix, y =>
 				{
-					byte* p = pBase + x * stride; // új sor
+					byte* p = pBase + y * stride; // új sor
 
-					for (int y = 0; y < rowBytes; y++)
+					for (int x = 0; x < rowBytes; x++)
 					{
-						p[y] = (byte)(255 - p[y]);
+						p[x] = (byte)(255 - p[x]);
 					}
 				});
 			}
@@ -60,13 +60,13 @@ namespace SZKG_Photoshop_O75HNX
             {
 				byte* pBase = (byte*)bmData.Scan0;
 				
-				Parallel.For(0, imgHeightPix, x =>
+				Parallel.For(0, imgHeightPix, y =>
 				{
-					byte* p = pBase + x * stride;
+					byte* p = pBase + y * stride;
 
-					for (int y = 0; y < rowBytes; y++)
+					for (int x = 0; x < rowBytes; x++)
 					{
-						p[y] = gammaLUT[p[y]];
+						p[x] = gammaLUT[p[x]];
 					}
 				});
 			}
@@ -99,13 +99,13 @@ namespace SZKG_Photoshop_O75HNX
 			{
 				byte* pBase = (byte*)srcBmData.Scan0;
 
-				Parallel.For(0, imgHeightPix, x =>
+				Parallel.For(0, imgHeightPix, y =>
 				{
-					byte* p = pBase + x * stride;
+					byte* p = pBase + y * stride;
 
-					for (int y = 0; y < rowBytes; y++)
+					for (int x = 0; x < rowBytes; x++)
 					{
-						p[y] = logLUT[p[y]];
+						p[x] = logLUT[p[x]];
 					}
 				});
 			}
@@ -130,19 +130,13 @@ namespace SZKG_Photoshop_O75HNX
             {
                 byte* pBase = (byte*)srcBmData.Scan0;
 
-                Parallel.For(0, imgHeightPix, x =>
+                Parallel.For(0, imgHeightPix, y =>
                 {
-                    byte* p = pBase + x * stride;
+                    byte* p = pBase + y * stride;
 
-                    for (int y = 0; y < rowBytes; y += 3)
+                    for (int x = 0; x < rowBytes; x += 3)
                     {
-                        byte blue = p[y];
-                        byte green = p[y + 1];
-                        byte red = p[y + 2];
-
-                        byte gray = (byte)(0.299 * red + 0.587 * green + 0.114 * blue);
-
-                        p[y] = p[y + 1] = p[y + 2] = gray;
+						p[x] = p[x + 1] = p[x + 2] = (byte)(0.299 * p[x] + 0.587 * p[x + 1] + 0.114 * p[x + 2]); //BGR
                     }
                 });
             }
@@ -192,15 +186,15 @@ namespace SZKG_Photoshop_O75HNX
                     int[] lg = localG[i];
                     int[] lb = localB[i];
 
-                    for (int x = startX; x < endX; x++)
+                    for (int y = startX; y < endX; y++)
                     {
-                        byte* p = pBase + x * stride;
+                        byte* p = pBase + y * stride;
 
-                        for (int y = 0; y < rowBytes; y += 3)
+                        for (int x = 0; x < rowBytes; x += 3)
                         {
-                            lb[p[y]]++;
-                            lg[p[y + 1]]++;
-                            lr[p[y + 2]]++;
+                            lb[p[x]]++;
+                            lg[p[x + 1]]++;
+                            lr[p[x + 2]]++;
                         }
                     }
                 });
@@ -391,48 +385,69 @@ namespace SZKG_Photoshop_O75HNX
             return dstImage;
         }
 
-        public static Bitmap ApplyGaussianFilter(Bitmap sourceImage)
+        public static Bitmap ApplyGaussianFilter(Bitmap srcImage, int kernelSize = 3)
 		{
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
-				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+			double sigma = 0.3 * ((kernelSize - 1) * 0.5 - 1) + 0.8;
+
+			int imgWidthPix = srcImage.Width;
+			int imgHeightPix = srcImage.Height;
+
+			Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format24bppRgb);
+
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+
+			BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
 
 			//TODO: 
 
-			sourceImage.UnlockBits(bmData);
-			return sourceImage;
+			srcImage.UnlockBits(srcBmData);
+			dstImage.UnlockBits(dstBmData);
+
+			return dstImage;
 		}
 
-		public static Bitmap ApplySobelEdgeDetection(Bitmap sourceImage)
+		public static Bitmap ApplySobelEdgeDetection(Bitmap srcImage)
 		{
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
-				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+			int imgWidthPix = srcImage.Width;
+			int imgHeightPix = srcImage.Height;
+
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb); ;
 
 			//TODO: 
 
-			sourceImage.UnlockBits(bmData);
-			return sourceImage;
+			srcImage.UnlockBits(srcBmData);
+			return srcImage;
 		}
 
-		public static Bitmap ApplyLaplacianEdgeDetection(Bitmap sourceImage)
+		public static Bitmap ApplyLaplacianEdgeDetection(Bitmap srcImage)
 		{
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
-				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+			int imgWidthPix = srcImage.Width;
+			int imgHeightPix = srcImage.Height;
+
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb); ;
 
 			//TODO: 
 
-			sourceImage.UnlockBits(bmData);
-			return sourceImage;
+			srcImage.UnlockBits(srcBmData);
+			return srcImage;
 		}
 
-		public static Bitmap DetectKeypoints(Bitmap sourceImage)
+		public static Bitmap DetectKeypoints(Bitmap srcImage)
 		{
-			BitmapData bmData = sourceImage.LockBits(new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
-				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+			int imgWidthPix = srcImage.Width;
+			int imgHeightPix = srcImage.Height;
+
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb); ;
 
 			//TODO: 
 
-			sourceImage.UnlockBits(bmData);
-			return sourceImage;
+			srcImage.UnlockBits(srcBmData);
+			return srcImage;
 		}
 	}
 }

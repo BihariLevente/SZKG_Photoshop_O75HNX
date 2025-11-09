@@ -34,8 +34,7 @@
             pictureBox2 = new PictureBox();
             flowLayoutPanel1 = new FlowLayoutPanel();
 
-            string imgSizePrefix = "Image size:\n ";
-            imgSizeLabel = CreateLabel(0, imgSizePrefix);
+            imgSizeLabel = CreateLabel(0, "Image size:\n");
             button1 = CreateButton("Load", button1_Click);
             tablePanel1 = CreateTableLayoutPanel(imgSizeLabel, button1);
 
@@ -45,16 +44,14 @@
             button3 = CreateButton("Invert", button3_Click);
 			tablePanel3 = CreateTableLayoutPanel(button3);
 
-			string gammaValuePrefix = "Gamma: ";
             button4 = CreateButton("GammaCorrect", button4_Click);
-            var gammaLabel = CreateLabel(gammaValue, gammaValuePrefix);
-            var gammaTrackBar = CreateParameterTrackBar(value => gammaValue = value, gammaLabel, 0.1, 10, 0.1, 1, gammaValuePrefix);
+            var gammaLabel = CreateLabel(gammaValue, "Gamma: ");
+            var gammaTrackBar = CreateParameterTrackBar(value => gammaValue = value, gammaLabel, 0.1, 10, 0.1, 1, "Gamma: ");
 			tablePanel4 = CreateTableLayoutPanel(gammaLabel, gammaTrackBar, button4);
 
-            string cValuePrefix = "C: ";
             button5 = CreateButton("LogTransform", button5_Click);
-            var cLabel = CreateLabel(cValue, cValuePrefix);
-            var cTrackBar = CreateParameterTrackBar(value => cValue = (int)value, cLabel, 5, 100, 1, 46, cValuePrefix);
+            var cLabel = CreateLabel(cValue, "C: ");
+            var cTrackBar = CreateParameterTrackBar(value => cValue = (int)value, cLabel, 5, 100, 1, 46, "C: ");
 			tablePanel5 = CreateTableLayoutPanel(cLabel, cTrackBar, button5);
 
 			button6 = CreateButton("GrayScale", button6_Click);
@@ -66,14 +63,15 @@
 			button8 = CreateButton("EqualizeHist", button8_Click);
 			tablePanel8 = CreateTableLayoutPanel(button8);
 
-			string k1ValuePrefix = "Kernel: ";
             button9 = CreateButton("BoxFilter", button9_Click);
-            var k1Label = CreateLabel(k1Value, k1ValuePrefix);
-            var k1TrackBar = CreateParameterTrackBar(value => k1Value = (int)value, k1Label, 1, 15, 2, 3, k1ValuePrefix);
+            var k1Label = CreateLabel(k1Value, "Kernel: ");
+            var k1TrackBar = CreateParameterTrackBar(value => k1Value = (int)value, k1Label, 1, 15, 2, 3, "Kernel: ");
 			tablePanel9 = CreateTableLayoutPanel(k1Label, k1TrackBar, button9);
 
 			button10 = CreateButton("GaussFilter", button10_Click);
-			tablePanel10 = CreateTableLayoutPanel(button10);
+			var gaussLabel = CreateLabel(k1Value, "Kernel: ");
+			var k2TrackBar = CreateParameterTrackBar(value => k2Value = (int)value, gaussLabel, 1, 15, 2, 3, "Kernel: ");
+            tablePanel10 = CreateTableLayoutPanel(gaussLabel, k2TrackBar, button10);
 
 			button11 = CreateButton("SobelEdge", button11_Click);
 			tablePanel11 = CreateTableLayoutPanel(button11);
@@ -340,8 +338,9 @@
 
         private TableLayoutPanel tablePanel10;
         private Button button10;
+		public int k2Value = 3;
 
-        private TableLayoutPanel tablePanel11;
+		private TableLayoutPanel tablePanel11;
         private Button button11;
 
         private TableLayoutPanel tablePanel12;

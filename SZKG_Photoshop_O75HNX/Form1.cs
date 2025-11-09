@@ -224,7 +224,7 @@ namespace SZKG_Photoshop_O75HNX
 
                 RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGaussianFilter(bmImage);
+					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGaussianFilter(bmImage, k2Value);
 				}, "ApplyGaussianFilter");
 			}
 		}
