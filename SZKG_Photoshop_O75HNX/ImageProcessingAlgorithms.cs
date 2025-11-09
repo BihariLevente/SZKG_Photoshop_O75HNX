@@ -1,4 +1,6 @@
 ﻿using System.Drawing.Imaging;
+using System.Runtime.Intrinsics.Arm;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace SZKG_Photoshop_O75HNX
 {
@@ -182,10 +184,10 @@ namespace SZKG_Photoshop_O75HNX
                     localG[i] = new int[256];
                     localB[i] = new int[256];
                 }
-
-                Parallel.For(0, processorCount, i =>
+				Parallel.For(0, processorCount, i =>
                 {
-                    int startY = i * imgHeightPix / processorCount;
+					//Split the image rows into 'processorCount' segments
+					int startY = i * imgHeightPix / processorCount;
                     int endY = (i + 1) * imgHeightPix / processorCount;
 
                     int[] lr = localR[i];
@@ -218,6 +220,7 @@ namespace SZKG_Photoshop_O75HNX
             }
 
             srcImage.UnlockBits(bmData);
+
             return (histR, histG, histB);
         }
 
@@ -297,34 +300,34 @@ namespace SZKG_Photoshop_O75HNX
                 int width = histForm.ClientSize.Width;
                 int height = histForm.ClientSize.Height;
 
-                int rgbMax = Math.Max(histR.Max(), Math.Max(histG.Max(), histB.Max()));
-                int rgbWidth = width / histR.Length;
-                int barWidth = rgbWidth / 3;
+                int bgrMax = Math.Max(histR.Max(), Math.Max(histG.Max(), histB.Max()));
+                int bgrWidth = width / histR.Length;
+                int barWidth = bgrWidth / 3;
                 int barSpacing = 1;
 
                 for (int i = 0; i < 256; i++)
                 {
-                    int xStart = i * rgbWidth + 60;
+                    int xStart = i * bgrWidth + 60;
                     int heightScale = height - 60;
 
-                    // Red
-                    int rHeight = (int)((double)histR[i] / rgbMax * heightScale);
+					// Blue
+					int bHeight = (int)((double)histB[i] / bgrMax * heightScale);
+					int bY = height - bHeight - 15;
+					g.FillRectangle(Brushes.Blue, xStart + 2 * (barWidth + barSpacing), bY, barWidth, bHeight);
+
+					// Green
+					int gHeight = (int)((double)histG[i] / bgrMax * heightScale);
+					int gY = height - gHeight - 15;
+					g.FillRectangle(Brushes.Green, xStart + barWidth + barSpacing, gY, barWidth, gHeight);
+
+					// Red
+					int rHeight = (int)((double)histR[i] / bgrMax * heightScale);
                     int rY = height - rHeight - 15;
                     g.FillRectangle(Brushes.Red, xStart, rY, barWidth, rHeight);
-
-                    // Green
-                    int gHeight = (int)((double)histG[i] / rgbMax * heightScale);
-                    int gY = height - gHeight - 15;
-                    g.FillRectangle(Brushes.Green, xStart + barWidth + barSpacing, gY, barWidth, gHeight);
-
-                    // Blue
-                    int bHeight = (int)((double)histB[i] / rgbMax * heightScale);
-                    int bY = height - bHeight - 15;
-                    g.FillRectangle(Brushes.Blue, xStart + 2 * (barWidth + barSpacing), bY, barWidth, bHeight);
                 }
 
                 Font font = new Font("Arial", 10, FontStyle.Bold);
-                string maxText = $"Max value: {rgbMax}";
+                string maxText = $"Max value: {bgrMax}";
                 SizeF textSize = g.MeasureString(maxText, font);
                 g.DrawString(maxText, font, Brushes.Black, (width - textSize.Width) / 2, 10);
             };
@@ -346,46 +349,49 @@ namespace SZKG_Photoshop_O75HNX
                 ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
 
             int stride = srcBmData.Stride;
+            int radius = kernelSize / 2;
+            int count = kernelSize * kernelSize;
 
             unsafe
             {
                 byte* pSrcBase = (byte*)srcBmData.Scan0;
                 byte* pDstBase = (byte*)dstBmData.Scan0;
-                int offset = kernelSize / 2;
 
-                Parallel.For(0, imgHeightPix, y =>
+				for (int y = 0; y < imgHeightPix; y++)
+				{
+					byte* s = pSrcBase + y * stride;
+					byte* d = pDstBase + y * stride;
+					Buffer.MemoryCopy(s, d, stride, stride);
+				}
+
+				Parallel.For(radius, imgHeightPix - radius, y =>
                 {
-                    for (int x = 0; x < imgWidthPix; x++)
-                    {
-                        int sumR = 0, sumG = 0, sumB = 0;
-                        int count = 0;
+					for (int x = radius; x < imgWidthPix - radius; x++)
+					{
+						int sumB = 0, sumG = 0, sumR = 0;
 
-                        for (int fy = -offset; fy <= offset; fy++)
-                        {
-                            int iy = y + fy;
-                            if (iy < 0 || iy >= imgHeightPix) continue;
+						int x0 = x - radius;   // ablak bal széle
+						int y0 = y - radius;   // ablak felső sora
 
-                            byte* pRow = pSrcBase + iy * stride;
+						for (int ky = 0; ky < kernelSize; ky++)
+						{
+							byte* pWindowPixel = pSrcBase + (y0 + ky) * stride + x0 * 3;
 
-                            for (int fx = -offset; fx <= offset; fx++)
-                            {
-                                int ix = x + fx;
-                                if (ix < 0 || ix >= imgWidthPix) continue;
+							for (int kx = 0; kx < kernelSize; kx++)
+							{
+								sumB += pWindowPixel[0];
+								sumG += pWindowPixel[1];
+								sumR += pWindowPixel[2];
+								pWindowPixel += 3;
+							}
+						}
 
-                                byte* pPixel = pRow + ix * 3;
-                                sumB += pPixel[0];
-                                sumG += pPixel[1];
-                                sumR += pPixel[2];
-                                count++;
-                            }
-                        }
-
-                        byte* pDstPixel = pDstBase + y * stride + x * 3;
-                        pDstPixel[0] = (byte)(sumB / count);
-                        pDstPixel[1] = (byte)(sumG / count);
-                        pDstPixel[2] = (byte)(sumR / count);
-                    }
-                });
+						byte* dstPix = pDstBase + y * stride + x * 3;
+						dstPix[0] = (byte)(sumB / count);
+						dstPix[1] = (byte)(sumG / count);
+						dstPix[2] = (byte)(sumR / count);
+					}
+				});
             }
 
             srcImage.UnlockBits(srcBmData);
@@ -396,8 +402,6 @@ namespace SZKG_Photoshop_O75HNX
 
         public static Bitmap ApplyGaussianFilter(Bitmap srcImage, int kernelSize = 3)
 		{
-			double sigma = 0.3 * ((kernelSize - 1) * 0.5 - 1) + 0.8;
-
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
@@ -409,12 +413,89 @@ namespace SZKG_Photoshop_O75HNX
 			BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
 				ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
 
-			//TODO: 
+			int stride = srcBmData.Stride;
+			int radius = kernelSize / 2;
+
+			double[,] kernel = CalculateGaussKernel(kernelSize, radius);
+
+			unsafe
+            {
+                byte* pSrcBase = (byte*)srcBmData.Scan0;
+                byte* pDstBase = (byte*)dstBmData.Scan0;
+
+				for (int y = 0; y < imgHeightPix; y++)
+				{
+					byte* s = pSrcBase + y * stride;
+					byte* d = pDstBase + y * stride;
+					Buffer.MemoryCopy(s, d, stride, stride);
+				}
+
+				Parallel.For(radius, imgHeightPix - radius, y =>
+				{
+					for (int x = radius; x < imgWidthPix - radius; x++)
+					{
+						double sumB = 0, sumG = 0, sumR = 0;
+
+						int x0 = x - radius;   // ablak bal széle
+						int y0 = y - radius;   // ablak felső sora
+
+						for (int ky = 0; ky < kernelSize; ky++)
+						{
+							byte* pWindowPixel = pSrcBase + (y0 + ky) * stride + x0 * 3;
+
+							for (int kx = 0; kx < kernelSize; kx++)
+							{
+								double weight = kernel[ky, kx];
+
+								sumB += pWindowPixel[0] * weight;
+								sumG += pWindowPixel[1] * weight;
+								sumR += pWindowPixel[2] * weight;
+
+								pWindowPixel += 3;
+							}
+						}
+
+						byte* dstPix = pDstBase + y * stride + x * 3;
+
+						dstPix[0] = (byte)sumB;
+						dstPix[1] = (byte)sumG;
+						dstPix[2] = (byte)sumR;
+					}
+				});
+			}
 
 			srcImage.UnlockBits(srcBmData);
 			dstImage.UnlockBits(dstBmData);
 
 			return dstImage;
+		}
+
+		private static double[,] CalculateGaussKernel(int kernelSize, int radius)
+		{
+			// ökölszabály sigma számítására
+			double sigma = 0.3 * ((kernelSize - 1) * 0.5 - 1) + 0.8;
+			double[,] kernel = new double[kernelSize, kernelSize];
+			double twoSigma2 = 2 * sigma * sigma;
+			double sum = 0.0;
+
+			// 2D Gauss-kernel előállítása
+			for (int y = -radius; y <= radius; y++)
+			{
+				for (int x = -radius; x <= radius; x++)
+				{
+					double exponent = -(x * x + y * y) / twoSigma2;
+					double value = Math.Exp(exponent) / (Math.PI * twoSigma2);
+					kernel[y + radius, x + radius] = value;
+					sum += value;
+				}
+			}
+
+			// 2D Gauss-kernel (összeg 1)
+			for (int i = 0; i < kernelSize; i++)
+				for (int j = 0; j < kernelSize; j++)
+					kernel[i, j] /= sum;
+
+			return kernel;
 		}
 
 		public static Bitmap ApplySobelEdgeDetection(Bitmap srcImage)
