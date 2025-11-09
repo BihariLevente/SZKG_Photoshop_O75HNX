@@ -30,7 +30,7 @@ namespace SZKG_Photoshop_O75HNX
 
 					for (int x = 0; x < imgWidthPix; x++)
 					{
-						pRow[0] ^= 0x00FFFFFFu; // bitmaszk alsó 3 byte (BGR) intertálása, A változatlan
+						pRow[0] ^= 0x00FFFFFFu; // bitmaszk alsó 3 byte (BGR) intertálása XOR művelettel, A változatlan
 						pRow++;
 					}
 				});
@@ -69,12 +69,10 @@ namespace SZKG_Photoshop_O75HNX
 
 					for (int x = 0; x < imgWidthPix; x++)
 					{
-						uint currentPixel = pRow[0];
-
-						byte b = (byte)currentPixel;
-						byte g = (byte)(currentPixel >> 8); // >> biteltolás jobbra
-						byte r = (byte)(currentPixel >> 16);
-						byte a = (byte)(currentPixel >> 24);
+						byte b = (byte)pRow[0];
+						byte g = (byte)(pRow[0] >> 8); // >> biteltolás jobbra
+						byte r = (byte)(pRow[0] >> 16);
+						byte a = (byte)(pRow[0] >> 24);
 
 						pRow[0] = ((uint)a << 24) | ((uint)gammaLUT[r] << 16) | ((uint)gammaLUT[g] << 8) | gammaLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
 
@@ -116,12 +114,10 @@ namespace SZKG_Photoshop_O75HNX
 
 					for (int x = 0; x < imgWidthPix; x++)
 					{
-						uint currentPixel = pRow[0];
-
-						byte b = (byte)currentPixel;
-						byte g = (byte)(currentPixel >> 8); // >> biteltolás jobbra
-						byte r = (byte)(currentPixel >> 16);
-						byte a = (byte)(currentPixel >> 24);
+						byte b = (byte)(pRow[0]);
+						byte g = (byte)(pRow[0] >> 8); // >> biteltolás jobbra
+						byte r = (byte)(pRow[0] >> 16);
+						byte a = (byte)(pRow[0] >> 24);
 
 						pRow[0] = ((uint)a << 24) | ((uint)logLUT[r] << 16) | ((uint)logLUT[g] << 8) | logLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
 
@@ -141,7 +137,7 @@ namespace SZKG_Photoshop_O75HNX
             int imgHeightPix = srcImage.Height;
 
 			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-                ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+                ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
 
             int stride = srcBmData.Stride;
 
@@ -151,12 +147,20 @@ namespace SZKG_Photoshop_O75HNX
 
 				Parallel.For(0, imgHeightPix, y =>
                 {
-                    byte* pRow = pBase + y * stride;
+                    uint* pRow = (uint*)(pBase + y * stride);
 
 					for (int x = 0; x < imgWidthPix; x++)
                     {
-						pRow[0] = pRow[1] = pRow[2] = (byte)(0.299 * pRow[0] + 0.587 * pRow[1] + 0.114 * pRow[2]); //BGR
-                        pRow += 3;
+						int b = (byte)(pRow[0]);
+						int g = (byte)(pRow[0] >> 8);
+						int r = (byte)(pRow[0] >> 16);
+						int a = (byte)(pRow[0] >> 24);
+
+						byte gray = (byte)((114 * b + 587 * g + 299 * r) / 1000);
+
+						pRow[0] = ((uint)a << 24) | ((uint)gray << 16) | ((uint)gray << 8) | gray;
+
+						pRow++;
 					}
                 });
             }
