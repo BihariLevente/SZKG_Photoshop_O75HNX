@@ -14,7 +14,7 @@ namespace SZKG_Photoshop_O75HNX
 			// srcImage.PixelFormat = Format32bppArgb
 			// BGRA!!!
 			BitmapData bmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix), 
-				ImageLockMode.ReadWrite, srcImage.PixelFormat);
+				ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
 
 			// teljes sorhossz (stride) = (hasznos bájtok száma) + (igazítás 4 byte-ra), de esetemben nincs offset
 			// [B][G][R][A][B][G][R][A]...[offset]
@@ -55,7 +55,7 @@ namespace SZKG_Photoshop_O75HNX
 			}
 
 			BitmapData bmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix), 
-				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+				ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
 
 			int stride = bmData.Stride;
 
@@ -65,14 +65,20 @@ namespace SZKG_Photoshop_O75HNX
 				
 				Parallel.For(0, imgHeightPix, y =>
 				{
-					byte* pRow = pBase + y * stride;
+					uint* pRow = (uint*)(pBase + y * stride);
 
 					for (int x = 0; x < imgWidthPix; x++)
 					{
-						pRow[0] = gammaLUT[pRow[0]];
-						pRow[1] = gammaLUT[pRow[1]];
-						pRow[2] = gammaLUT[pRow[2]];
-						pRow += 3;
+						uint currentPixel = pRow[0];
+
+						byte b = (byte)currentPixel;
+						byte g = (byte)(currentPixel >> 8); // >> biteltolás jobbra
+						byte r = (byte)(currentPixel >> 16);
+						byte a = (byte)(currentPixel >> 24);
+
+						pRow[0] = ((uint)a << 24) | ((uint)gammaLUT[r] << 16) | ((uint)gammaLUT[g] << 8) | gammaLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
+
+						pRow++;
 					}
 				});
 			}
