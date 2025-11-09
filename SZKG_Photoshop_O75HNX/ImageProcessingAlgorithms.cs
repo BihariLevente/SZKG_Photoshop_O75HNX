@@ -11,28 +11,27 @@ namespace SZKG_Photoshop_O75HNX
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
-            // BGR!!!
+			// srcImage.PixelFormat = Format32bppArgb
+			// BGRA!!!
 			BitmapData bmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix), 
-				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+				ImageLockMode.ReadWrite, srcImage.PixelFormat);
 
-			// teljes sorhossz (stride) = (hasznos bájtok száma) + (igazítás 4 byte-ra)
-			// [B][G][R][B][G][R]...[offset]
+			// teljes sorhossz (stride) = (hasznos bájtok száma) + (igazítás 4 byte-ra), de esetemben nincs offset
+			// [B][G][R][A][B][G][R][A]...[offset]
 			int stride = bmData.Stride;
 
-            unsafe
+			unsafe
 			{
                 byte* pBase = (byte*)bmData.Scan0;
 
 				Parallel.For(0, imgHeightPix, y =>
 				{
-					byte* p = pBase + y * stride; // új sor
+					uint* pRow = (uint*)(pBase + y * stride);
 
 					for (int x = 0; x < imgWidthPix; x++)
 					{
-						p[0] = (byte)(255 - p[0]);
-						p[1] = (byte)(255 - p[1]);
-						p[2] = (byte)(255 - p[2]);
-						p += 3;
+						pRow[0] ^= 0x00FFFFFFu; // bitmaszk alsó 3 byte (BGR) intertálása, A változatlan
+						pRow++;
 					}
 				});
 			}
@@ -66,14 +65,14 @@ namespace SZKG_Photoshop_O75HNX
 				
 				Parallel.For(0, imgHeightPix, y =>
 				{
-					byte* p = pBase + y * stride;
+					byte* pRow = pBase + y * stride;
 
 					for (int x = 0; x < imgWidthPix; x++)
 					{
-						p[0] = gammaLUT[p[0]];
-						p[1] = gammaLUT[p[1]];
-						p[2] = gammaLUT[p[2]];
-						p += 3;
+						pRow[0] = gammaLUT[pRow[0]];
+						pRow[1] = gammaLUT[pRow[1]];
+						pRow[2] = gammaLUT[pRow[2]];
+						pRow += 3;
 					}
 				});
 			}
@@ -107,14 +106,14 @@ namespace SZKG_Photoshop_O75HNX
 
 				Parallel.For(0, imgHeightPix, y =>
 				{
-					byte* p = pBase + y * stride;
+					byte* pRow = pBase + y * stride;
 
 					for (int x = 0; x < imgWidthPix; x++)
 					{
-						p[0] = logLUT[p[0]];
-						p[1] = logLUT[p[1]];
-						p[2] = logLUT[p[2]];
-						p += 3;
+						pRow[0] = logLUT[pRow[0]];
+						pRow[1] = logLUT[pRow[1]];
+						pRow[2] = logLUT[pRow[2]];
+						pRow += 3;
 					}
 				});
 			}
@@ -129,24 +128,24 @@ namespace SZKG_Photoshop_O75HNX
             int imgWidthPix = srcImage.Width;
             int imgHeightPix = srcImage.Height;
 
-            BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
                 ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
             int stride = srcBmData.Stride;
 
-            unsafe
+			unsafe
             {
                 byte* pBase = (byte*)srcBmData.Scan0;
 
-                Parallel.For(0, imgHeightPix, y =>
+				Parallel.For(0, imgHeightPix, y =>
                 {
-                    byte* p = pBase + y * stride;
+                    byte* pRow = pBase + y * stride;
 
-                    for (int x = 0; x < imgWidthPix; x++)
+					for (int x = 0; x < imgWidthPix; x++)
                     {
-						p[0] = p[1] = p[2] = (byte)(0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2]); //BGR
-                        p += 3;
-                    }
+						pRow[0] = pRow[1] = pRow[2] = (byte)(0.299 * pRow[0] + 0.587 * pRow[1] + 0.114 * pRow[2]); //BGR
+                        pRow += 3;
+					}
                 });
             }
 
@@ -196,14 +195,14 @@ namespace SZKG_Photoshop_O75HNX
 
                     for (int y = startY; y < endY; y++)
                     {
-                        byte* p = pBase + y * stride;
+                        byte* pRow = pBase + y * stride;
 
                         for (int x = 0; x < imgWidthPix; x++)
                         {
-                            lb[p[0]]++;
-                            lg[p[1]]++;
-                            lr[p[2]]++;
-                            p += 3;
+                            lb[pRow[0]]++;
+                            lg[pRow[1]]++;
+                            lr[pRow[2]]++;
+                            pRow += 3;
                         }
                     }
                 });
@@ -375,14 +374,14 @@ namespace SZKG_Photoshop_O75HNX
 
 						for (int ky = 0; ky < kernelSize; ky++)
 						{
-							byte* pWindowPixel = pSrcBase + (y0 + ky) * stride + x0 * 3;
+							byte* pWindow = pSrcBase + (y0 + ky) * stride + x0 * 3;
 
 							for (int kx = 0; kx < kernelSize; kx++)
 							{
-								sumB += pWindowPixel[0];
-								sumG += pWindowPixel[1];
-								sumR += pWindowPixel[2];
-								pWindowPixel += 3;
+								sumB += pWindow[0];
+								sumG += pWindow[1];
+								sumR += pWindow[2];
+								pWindow += 3;
 							}
 						}
 
@@ -441,17 +440,17 @@ namespace SZKG_Photoshop_O75HNX
 
 						for (int ky = 0; ky < kernelSize; ky++)
 						{
-							byte* pWindowPixel = pSrcBase + (y0 + ky) * stride + x0 * 3;
+							byte* pWindow = pSrcBase + (y0 + ky) * stride + x0 * 3;
 
 							for (int kx = 0; kx < kernelSize; kx++)
 							{
 								double weight = kernel[ky, kx];
 
-								sumB += pWindowPixel[0] * weight;
-								sumG += pWindowPixel[1] * weight;
-								sumR += pWindowPixel[2] * weight;
+								sumB += pWindow[0] * weight;
+								sumG += pWindow[1] * weight;
+								sumR += pWindow[2] * weight;
 
-								pWindowPixel += 3;
+								pWindow += 3;
 							}
 						}
 
@@ -498,13 +497,56 @@ namespace SZKG_Photoshop_O75HNX
 			return kernel;
 		}
 
+		public static bool IsGrayscale(Bitmap srcImage, int tolerance = 0)
+		{
+			int bpp = Image.GetPixelFormatSize(srcImage.PixelFormat) / 8;
+			if (srcImage.PixelFormat == PixelFormat.Format8bppIndexed) return true;
+			if (bpp != 3 && bpp != 4) return false;
+
+			int imgWidthPix = srcImage.Width;
+			int imgHeightPix = srcImage.Height;
+
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.ReadOnly, srcImage.PixelFormat);
+
+			int stride = srcBmData.Stride;
+
+			try
+			{
+				unsafe
+				{
+					byte* pBase = (byte*)srcBmData.Scan0;
+
+					int stepY = Math.Max(1, srcImage.Height / 64);
+					int stepX = Math.Max(1, srcImage.Width / 64);
+
+					for (int y = 0; y < srcImage.Height; y += stepY)
+					{
+						byte* pRow = pBase + y * stride;
+
+						for (int x = 0; x < srcImage.Width; x += stepX)
+						{
+							byte b = pRow[x * bpp + 0];
+							byte g = pRow[x * bpp + 1];
+							byte r = pRow[x * bpp + 2];
+							int maxc = Math.Max(r, Math.Max(g, b));
+							int minc = Math.Min(r, Math.Min(g, b));
+							if (maxc - minc > tolerance) return false;
+						}
+					}
+				}
+				return true;
+			}
+			finally { srcImage.UnlockBits(srcBmData); }
+		}
+
 		public static Bitmap ApplySobelEdgeDetection(Bitmap srcImage)
 		{
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
 			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb); ;
+				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
 
 			//TODO: 
 
@@ -518,7 +560,7 @@ namespace SZKG_Photoshop_O75HNX
 			int imgHeightPix = srcImage.Height;
 
 			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb); ;
+				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
 
 			//TODO: 
 
@@ -532,7 +574,7 @@ namespace SZKG_Photoshop_O75HNX
 			int imgHeightPix = srcImage.Height;
 
 			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb); ;
+				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
 
 			//TODO: 
 

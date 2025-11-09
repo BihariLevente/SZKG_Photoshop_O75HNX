@@ -233,12 +233,24 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
+				bool isGrayscale = false;
                 Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
-                RunImageProcessingWithTimer(() =>
+				RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ApplySobelEdgeDetection(bmImage);
-				}, "ApplySobelEdgeDetection");
+					isGrayscale = ImageProcessingAlgorithms.IsGrayscale(bmImage);
+				}, "IsGrayscale");
+				if (isGrayscale)
+				{
+					RunImageProcessingWithTimer(() =>
+					{
+						pictureBox2.Image = ImageProcessingAlgorithms.ApplySobelEdgeDetection(bmImage);
+					}, "ApplySobelEdgeDetection");
+				}
+				else
+				{
+					MessageBox.Show("Image is not grayscale!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				}
 			}
 		}
 
