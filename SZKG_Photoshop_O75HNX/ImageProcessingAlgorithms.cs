@@ -365,7 +365,7 @@ namespace SZKG_Photoshop_O75HNX
 
         public static Bitmap ApplyBoxFilter(Bitmap srcImage, int kernelSize = 3)
         {
-			//TODO: optimized with 32bpp
+			//TODO: optimize with 32bpp
 
             int imgWidthPix = srcImage.Width;
             int imgHeightPix = srcImage.Height;
@@ -460,7 +460,7 @@ namespace SZKG_Photoshop_O75HNX
 
 		public static Bitmap ApplyGaussianFilter(Bitmap srcImage, int kernelSize = 3)
 		{
-			//TODO: optimized with 32bpp
+			//TODO: optimize with 32bpp
 
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
@@ -575,6 +575,8 @@ namespace SZKG_Photoshop_O75HNX
 
 		public static Bitmap ApplySobelEdgeDetection(Bitmap srcImage)
 		{
+			//TODO: to write the function with 32bpp
+
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
@@ -589,6 +591,8 @@ namespace SZKG_Photoshop_O75HNX
 
 		public static Bitmap ApplyLaplacianEdgeDetection(Bitmap srcImage)
 		{
+			//TODO: to write the function with 32bpp
+
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
@@ -603,6 +607,8 @@ namespace SZKG_Photoshop_O75HNX
 
 		public static Bitmap DetectKeypoints(Bitmap srcImage)
 		{
+			//TODO: to write the function with 32bpp
+
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
