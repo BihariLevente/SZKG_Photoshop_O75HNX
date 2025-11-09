@@ -13,9 +13,9 @@ namespace SZKG_Photoshop_O75HNX
 			BitmapData bmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix), 
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
-            // teljes sorhossz (stride) = nWidth (hasznos bájtok száma) + nOffset (igazítás 4 byte-ra)
-            int stride = bmData.Stride;
-            int rowBytes = imgWidthPix * 3;
+			// teljes sorhossz (stride) = (hasznos bájtok száma) + (igazítás 4 byte-ra)
+			// [B][G][R][B][G][R]...[offset]
+			int stride = bmData.Stride;
 
             unsafe
 			{
@@ -25,9 +25,12 @@ namespace SZKG_Photoshop_O75HNX
 				{
 					byte* p = pBase + y * stride; // új sor
 
-					for (int x = 0; x < rowBytes; x++)
+					for (int x = 0; x < imgWidthPix; x++)
 					{
-						p[x] = (byte)(255 - p[x]);
+						p[0] = (byte)(255 - p[0]);
+						p[1] = (byte)(255 - p[1]);
+						p[2] = (byte)(255 - p[2]);
+						p += 3;
 					}
 				});
 			}
@@ -54,7 +57,6 @@ namespace SZKG_Photoshop_O75HNX
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
 			int stride = bmData.Stride;
-            int rowBytes = imgWidthPix * 3;
 
             unsafe
             {
@@ -64,9 +66,12 @@ namespace SZKG_Photoshop_O75HNX
 				{
 					byte* p = pBase + y * stride;
 
-					for (int x = 0; x < rowBytes; x++)
+					for (int x = 0; x < imgWidthPix; x++)
 					{
-						p[x] = gammaLUT[p[x]];
+						p[0] = gammaLUT[p[0]];
+						p[1] = gammaLUT[p[1]];
+						p[2] = gammaLUT[p[2]];
+						p += 3;
 					}
 				});
 			}
@@ -93,7 +98,6 @@ namespace SZKG_Photoshop_O75HNX
 				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
 			int stride = srcBmData.Stride;
-            int rowBytes = imgWidthPix * 3;
 
             unsafe
 			{
@@ -103,9 +107,12 @@ namespace SZKG_Photoshop_O75HNX
 				{
 					byte* p = pBase + y * stride;
 
-					for (int x = 0; x < rowBytes; x++)
+					for (int x = 0; x < imgWidthPix; x++)
 					{
-						p[x] = logLUT[p[x]];
+						p[0] = logLUT[p[0]];
+						p[1] = logLUT[p[1]];
+						p[2] = logLUT[p[2]];
+						p += 3;
 					}
 				});
 			}
@@ -124,7 +131,6 @@ namespace SZKG_Photoshop_O75HNX
                 ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
 
             int stride = srcBmData.Stride;
-            int rowBytes = imgWidthPix * 3;
 
             unsafe
             {
@@ -134,9 +140,10 @@ namespace SZKG_Photoshop_O75HNX
                 {
                     byte* p = pBase + y * stride;
 
-                    for (int x = 0; x < rowBytes; x += 3)
+                    for (int x = 0; x < imgWidthPix; x++)
                     {
-						p[x] = p[x + 1] = p[x + 2] = (byte)(0.299 * p[x] + 0.587 * p[x + 1] + 0.114 * p[x + 2]); //BGR
+						p[0] = p[1] = p[2] = (byte)(0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2]); //BGR
+                        p += 3;
                     }
                 });
             }
@@ -159,7 +166,6 @@ namespace SZKG_Photoshop_O75HNX
                 ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
 
             int stride = bmData.Stride;
-            int rowBytes = imgWidthPix * 3;
 
             unsafe
             {
@@ -179,22 +185,23 @@ namespace SZKG_Photoshop_O75HNX
 
                 Parallel.For(0, processorCount, i =>
                 {
-                    int startX = i * imgHeightPix / processorCount;
-                    int endX = (i + 1) * imgHeightPix / processorCount;
+                    int startY = i * imgHeightPix / processorCount;
+                    int endY = (i + 1) * imgHeightPix / processorCount;
 
                     int[] lr = localR[i];
                     int[] lg = localG[i];
                     int[] lb = localB[i];
 
-                    for (int y = startX; y < endX; y++)
+                    for (int y = startY; y < endY; y++)
                     {
                         byte* p = pBase + y * stride;
 
-                        for (int x = 0; x < rowBytes; x += 3)
+                        for (int x = 0; x < imgWidthPix; x++)
                         {
-                            lb[p[x]]++;
-                            lg[p[x + 1]]++;
-                            lr[p[x + 2]]++;
+                            lb[p[0]]++;
+                            lg[p[1]]++;
+                            lr[p[2]]++;
+                            p += 3;
                         }
                     }
                 });
@@ -216,7 +223,9 @@ namespace SZKG_Photoshop_O75HNX
 
         public static (int[], int[], int[]) EqualizeHistogram(int[] histR, int[] histG, int[] histB)
 		{
-            int L = 256;
+			//Képlet: s = T(r) = (L - 1)*Σp_A(i) <--- (i 0-tól r-ig)
+
+			int L = 256;
             int totalPixelsR = histR.Sum();
             int totalPixelsG = histG.Sum();
             int totalPixelsB = histB.Sum();
