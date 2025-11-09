@@ -41,12 +41,12 @@ namespace SZKG_Photoshop_O75HNX
 			return srcImage;
 		}
 
-		public static Bitmap ApplyGammaCorrection(Bitmap srcImage, double gamma = 1)
+		public static Bitmap ApplyGammaTransform(Bitmap srcImage, double gamma = 1)
 		{
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
-			// Gamma LUT (look up table)
+			// Gamma look up table
 			byte[] gammaLUT = new byte[256];
 
 			for (int i = 0; i < 256; i++)
@@ -93,7 +93,7 @@ namespace SZKG_Photoshop_O75HNX
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
-			// Gamma LUT (look up table)
+			// Log look up table
 			byte[] logLUT = new byte[256];
 
 			for (int i = 0; i < 256; i++)
@@ -102,7 +102,7 @@ namespace SZKG_Photoshop_O75HNX
 			}
 
 			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+				ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
 
 			int stride = srcBmData.Stride;
 
@@ -112,14 +112,20 @@ namespace SZKG_Photoshop_O75HNX
 
 				Parallel.For(0, imgHeightPix, y =>
 				{
-					byte* pRow = pBase + y * stride;
+					uint* pRow = (uint*)(pBase + y * stride);
 
 					for (int x = 0; x < imgWidthPix; x++)
 					{
-						pRow[0] = logLUT[pRow[0]];
-						pRow[1] = logLUT[pRow[1]];
-						pRow[2] = logLUT[pRow[2]];
-						pRow += 3;
+						uint currentPixel = pRow[0];
+
+						byte b = (byte)currentPixel;
+						byte g = (byte)(currentPixel >> 8); // >> biteltolás jobbra
+						byte r = (byte)(currentPixel >> 16);
+						byte a = (byte)(currentPixel >> 24);
+
+						pRow[0] = ((uint)a << 24) | ((uint)logLUT[r] << 16) | ((uint)logLUT[g] << 8) | logLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
+
+						pRow++;
 					}
 				});
 			}

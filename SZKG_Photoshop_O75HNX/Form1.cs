@@ -136,7 +136,7 @@ namespace SZKG_Photoshop_O75HNX
 
                 RunImageProcessingWithTimer(() =>
 				{
-					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGammaCorrection(bmImage, gammaValue);
+					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGammaTransform(bmImage, gammaValue);
 				}, "ApplyGammaCorrection");
 			}
 		}
