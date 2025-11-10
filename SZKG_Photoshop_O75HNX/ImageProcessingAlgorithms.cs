@@ -490,35 +490,40 @@ namespace SZKG_Photoshop_O75HNX
             return kernel;
         }
 
-        private static double[,] CalculateGaussKernel(int kernelSize, int radius)
-        {
-            // ökölszabály sigma becslésére
-            double sigma = 0.3 * ((kernelSize - 1) * 0.5 - 1) + 0.8;
-            double[,] kernel = new double[kernelSize, kernelSize];
-            double twoSigma2 = 2 * sigma * sigma;
-            double sum = 0.0;
+		private static double[,] CalculateGaussKernel(int kernelSize, int radius)
+		{
+			// ökölszabály sigma becslésére
+			double sigma = 0.3 * ((kernelSize - 1) * 0.5 - 1) + 0.8;
 
-            // 2D Gauss-kernel előállítása
-            for (int y = -radius; y <= radius; y++)
-            {
-                for (int x = -radius; x <= radius; x++)
-                {
-                    double exponent = -(x * x + y * y) / twoSigma2;
-                    double value = Math.Exp(exponent) / (Math.PI * twoSigma2);
-                    kernel[y + radius, x + radius] = value;
-                    sum += value;
-                }
-            }
+			double[,] kernel = new double[kernelSize, kernelSize];
 
-            // 2D Gauss-kernel (összeg 1)
-            for (int i = 0; i < kernelSize; i++)
-                for (int j = 0; j < kernelSize; j++)
-                    kernel[i, j] /= sum;
+			double twoSigma2 = 2 * sigma * sigma;
 
-            return kernel;
-        }
+			double sum = 0;
+			// 2D Gauss-kernel előállítása
+			for (int y = -radius; y <= radius; y++)
+			{
+				for (int x = -radius; x <= radius; x++)
+				{
+					double v = Math.Exp(-(x * x + y * y) / twoSigma2);
+					kernel[y + radius, x + radius] = v;
+					sum += v;
+				}
+			}
 
-        public static Bitmap ApplyGaussianFilter(Bitmap srcImage, int kernelSize = 3)
+			// 2D Gauss-kernel normálása
+			for (int i = 0; i < kernelSize; i++)
+			{
+				for (int j = 0; j < kernelSize; j++)
+				{
+					kernel[i, j] /= sum;
+				}
+			}
+
+			return kernel;
+		}
+
+		public static Bitmap ApplyGaussianFilter(Bitmap srcImage, int kernelSize = 3)
         {
             int imgWidthPix = srcImage.Width;
             int imgHeightPix = srcImage.Height;
