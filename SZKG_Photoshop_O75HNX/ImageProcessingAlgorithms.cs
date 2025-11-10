@@ -352,13 +352,13 @@ namespace SZKG_Photoshop_O75HNX
             int imgWidthPix = srcImage.Width;
             int imgHeightPix = srcImage.Height;
 
-            Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format24bppRgb);
+            Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format32bppArgb);
 
             BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-                ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+                ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
             BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-                ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
+                ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
 
             int stride = srcBmData.Stride;
             int radius = kernelSize / 2;
@@ -387,23 +387,25 @@ namespace SZKG_Photoshop_O75HNX
 
 						for (int ky = 0; ky < kernelSize; ky++)
 						{
-							byte* pWindow = pSrcBase + (y0 + ky) * stride + x0 * 3;
+							uint* pWindow = (uint*)(pSrcBase + (y0 + ky) * stride + x0 * 4);
 
 							for (int kx = 0; kx < kernelSize; kx++)
 							{
-								sumB += pWindow[0];
-								sumG += pWindow[1];
-								sumR += pWindow[2];
+                                uint currPixelValue = pWindow[0];
 
-								pWindow += 3;
+                                sumB += (byte)(currPixelValue);
+                                sumG += (byte)(currPixelValue >> 8);
+                                sumR += (byte)(currPixelValue >> 16);
+
+								pWindow++;
 							}
 						}
 
-						byte* dstPix = pDstBase + y * stride + x * 3;
-						dstPix[0] = (byte)(sumB / count);
-						dstPix[1] = (byte)(sumG / count);
-						dstPix[2] = (byte)(sumR / count);
-					}
+                        uint* dstPix = (uint*)(pSrcBase + y * stride + x * 4);
+                        uint alpha = dstPix[0] & 0xFF000000;
+
+                        dstPix[0] = alpha | ((uint)sumR << 16) | ((uint)sumG << 8) | (uint)sumB;
+                    }
 				});
             }
 
@@ -464,78 +466,76 @@ namespace SZKG_Photoshop_O75HNX
         }
 
         public static Bitmap ApplyGaussianFilter(Bitmap srcImage, int kernelSize = 3)
-		{
-			//TODO: optimize with 32bpp
+        {
+            int imgWidthPix = srcImage.Width;
+            int imgHeightPix = srcImage.Height;
 
-			int imgWidthPix = srcImage.Width;
-			int imgHeightPix = srcImage.Height;
+            Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format32bppArgb);
 
-			Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format24bppRgb);
+            BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+                ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
-			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+            BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+                ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
 
-			BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
+            int stride = srcBmData.Stride;
+            int radius = kernelSize / 2;
 
-			int stride = srcBmData.Stride;
-			int radius = kernelSize / 2;
-
-			double[,] kernel = GetGaussKernelFromCache(kernelSize);
+            double[,] kernel = GetGaussKernelFromCache(kernelSize);
 
             unsafe
             {
                 byte* pSrcBase = (byte*)srcBmData.Scan0;
                 byte* pDstBase = (byte*)dstBmData.Scan0;
 
-				for (int y = 0; y < imgHeightPix; y++)
-				{
-					byte* s = pSrcBase + y * stride;
-					byte* d = pDstBase + y * stride;
-					Buffer.MemoryCopy(s, d, stride, stride);
-				}
+                for (int y = 0; y < imgHeightPix; y++)
+                {
+                    byte* s = pSrcBase + y * stride;
+                    byte* d = pDstBase + y * stride;
+                    Buffer.MemoryCopy(s, d, stride, stride);
+                }
 
-				Parallel.For(radius, imgHeightPix - radius, y =>
-				{
-					for (int x = radius; x < imgWidthPix - radius; x++)
-					{
-						double sumB = 0, sumG = 0, sumR = 0;
+                Parallel.For(radius, imgHeightPix - radius, y =>
+                {
+                    for (int x = radius; x < imgWidthPix - radius; x++)
+                    {
+                        double sumB = 0, sumG = 0, sumR = 0;
 
-						int x0 = x - radius;   // ablak bal széle
-						int y0 = y - radius;   // ablak felső sora
+                        int x0 = x - radius;
+                        int y0 = y - radius;
 
-						for (int ky = 0; ky < kernelSize; ky++)
-						{
-							byte* pWindow = pSrcBase + (y0 + ky) * stride + x0 * 3;
+                        for (int ky = 0; ky < kernelSize; ky++)
+                        {
+                            uint* pWindow = (uint*)(pSrcBase + (y0 + ky) * stride + x0 * 4);
 
-							for (int kx = 0; kx < kernelSize; kx++)
-							{
-								double weight = kernel[ky, kx];
+                            for (int kx = 0; kx < kernelSize; kx++)
+                            {
+                                uint currPixelValue = pWindow[0];
+                                double weight = kernel[ky, kx];
 
-								sumB += pWindow[0] * weight;
-								sumG += pWindow[1] * weight;
-								sumR += pWindow[2] * weight;
+                                sumB += (byte)(currPixelValue) * weight;
+                                sumG += (byte)(currPixelValue >> 8) * weight;
+                                sumR += (byte)(currPixelValue >> 16) * weight;
 
-								pWindow += 3;
-							}
-						}
+                                pWindow++;
+                            }
+                        }
 
-						byte* dstPix = pDstBase + y * stride + x * 3;
+                        uint* dstPix = (uint*)(pDstBase + y * stride + x * 4);
+                        uint alpha = dstPix[0] & 0xFF000000;
 
-						dstPix[0] = (byte)sumB;
-						dstPix[1] = (byte)sumG;
-						dstPix[2] = (byte)sumR;
-					}
-				});
-			}
+                        dstPix[0] = alpha | ((uint)sumR << 16) | ((uint)sumG << 8) | (uint)sumB;
+                    }
+                });
+            }
 
-			srcImage.UnlockBits(srcBmData);
-			dstImage.UnlockBits(dstBmData);
+            srcImage.UnlockBits(srcBmData);
+            dstImage.UnlockBits(dstBmData);
 
-			return dstImage;
-		}
+            return dstImage;
+        }
 
-		public static bool IsGrayscale(Bitmap srcImage, int tolerance = 0)
+        public static bool IsGrayscale(Bitmap srcImage, int tolerance = 0)
 		{
 			int bpp = Image.GetPixelFormatSize(srcImage.PixelFormat) / 8;
 			
