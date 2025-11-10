@@ -382,8 +382,8 @@ namespace SZKG_Photoshop_O75HNX
 					{
 						int sumB = 0, sumG = 0, sumR = 0;
 
-						int x0 = x - radius;   // ablak bal széle
-						int y0 = y - radius;   // ablak felső sora
+                        int y0 = y - radius;   // ablak felső sora
+                        int x0 = x - radius;   // ablak bal széle
 
 						for (int ky = 0; ky < kernelSize; ky++)
 						{
@@ -501,8 +501,8 @@ namespace SZKG_Photoshop_O75HNX
                     {
                         double sumB = 0, sumG = 0, sumR = 0;
 
-                        int x0 = x - radius;
-                        int y0 = y - radius;
+                        int y0 = y - radius;   // ablak felső sora
+                        int x0 = x - radius;   // ablak bal széle
 
                         for (int ky = 0; ky < kernelSize; ky++)
                         {
@@ -587,7 +587,7 @@ namespace SZKG_Photoshop_O75HNX
 		}
 
         // Sobel X kernel
-        private int[,] sobelX = new int[,]
+        private static readonly int[,] sobelX = new int[,]
         {
 			{ 1, 0, -1 },
 			{ 2, 0, -2 },
@@ -595,7 +595,7 @@ namespace SZKG_Photoshop_O75HNX
         };
 
         // Sobel Y kernel
-        private int[,] sobelY = new int[,]
+        private static readonly int[,] sobelY = new int[,]
         {
 			{  1,  2,  1 },
 			{  0,  0,  0 },
@@ -603,22 +603,63 @@ namespace SZKG_Photoshop_O75HNX
         };
 
         public static Bitmap ApplySobelEdgeDetection(Bitmap srcImage)
-		{
-			//TODO: to write the function with 32bpp
+        {
+            int width = srcImage.Width;
+            int height = srcImage.Height;
 
-			int imgWidthPix = srcImage.Width;
-			int imgHeightPix = srcImage.Height;
+            Bitmap dstImage = new Bitmap(width, height, PixelFormat.Format32bppArgb);
 
-			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+            BitmapData srcData = srcImage.LockBits(new Rectangle(0, 0, width, height),
+                ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
-			//TODO: 
+            BitmapData dstData = dstImage.LockBits(new Rectangle(0, 0, width, height),
+                ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
 
-			srcImage.UnlockBits(srcBmData);
-			return srcImage;
-		}
+            int stride = srcData.Stride;
 
-		public static Bitmap ApplyLaplacianEdgeDetection(Bitmap srcImage)
+            int[,] gx = new int[,] { { 1, 0, -1 }, { 2, 0, -2 }, { 1, 0, -1 } };
+            int[,] gy = new int[,] { { 1, 2, 1 }, { 0, 0, 0 }, { -1, -2, -1 } };
+
+            unsafe
+            {
+                byte* pSrcBase = (byte*)srcData.Scan0;
+                byte* pDstBase = (byte*)dstData.Scan0;
+
+                Parallel.For(1, height - 1, y =>
+                {
+                    for (int x = 1; x < width - 1; x++)
+                    {
+                        int sumX = 0, sumY = 0;
+
+                        for (int ky = -1; ky <= 1; ky++)
+                        {
+                            for (int kx = -1; kx <= 1; kx++)
+                            {
+                                byte* pPixel = pSrcBase + (y + ky) * stride + (x + kx) * 4;
+                                byte gray = (byte)(*(uint*)pPixel & 0xFF); // B komponens
+
+                                sumX += gray * gx[ky + 1, kx + 1];
+                                sumY += gray * gy[ky + 1, kx + 1];
+                            }
+                        }
+
+                        int mag = (int)Math.Sqrt(sumX * sumX + sumY * sumY);
+                        if (mag > 255) mag = 255;
+                        if (mag < 0) mag = 0;
+
+                        uint* dstPixel = (uint*)(pDstBase + y * stride + x * 4);
+                        *dstPixel = 0xFF000000 | ((uint)mag << 16) | ((uint)mag << 8) | (uint)mag;
+                    }
+                });
+            }
+
+            srcImage.UnlockBits(srcData);
+            dstImage.UnlockBits(dstData);
+
+            return dstImage;
+        }
+
+        public static Bitmap ApplyLaplacianEdgeDetection(Bitmap srcImage)
 		{
 			//TODO: to write the function with 32bpp
 
