@@ -204,6 +204,7 @@ namespace SZKG_Photoshop_O75HNX
 						pDstRow[0] = (byte)((114 * (byte)(currPixelValue) + 587 * (byte)(currPixelValue >> 8) + 299 * (byte)(currPixelValue >> 16)) / 1000);
 
 						pSrcRow++;
+						// 8bpp!
                         pDstRow++;
 					}
                 });
@@ -781,6 +782,54 @@ namespace SZKG_Photoshop_O75HNX
 
 			srcImage.UnlockBits(srcBmData);
 			return srcImage;
+		}
+
+		public static Bitmap ThresholdImage(Bitmap srcImage, int threshold = 128)
+		{
+			int imgWidthPix = srcImage.Width;
+			int imgHeightPix = srcImage.Height;
+
+			Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format32bppArgb);
+
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+
+			BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+
+			int srcStride = srcBmData.Stride;
+			int dstStride = dstBmData.Stride;
+
+			unsafe
+			{
+				byte* pSrcBase = (byte*)srcBmData.Scan0;
+				byte* pDstBase = (byte*)dstBmData.Scan0;
+
+				Parallel.For(0, imgHeightPix, y =>
+				{
+					uint* pSrcRow = (uint*)(pSrcBase + y * srcStride);
+					uint* pDstRow = (uint*)(pDstBase + y * dstStride);
+
+					for (int x = 0; x < imgWidthPix; x++)
+					{
+						uint currPixelValue = pSrcRow[0];
+						// B = G = R
+						byte gray = (byte)currPixelValue;
+						byte binary = (byte)(gray > threshold ? 255 : 0);
+
+						uint alpha = pSrcRow[0] & 0xFF000000;
+						pDstRow[0] = alpha | ((uint)binary << 16) | ((uint)binary << 8) | (uint)binary;
+
+						pSrcRow++;
+						pDstRow++;
+					}
+				});
+			}
+
+			srcImage.UnlockBits(srcBmData);
+			dstImage.UnlockBits(dstBmData);
+
+			return dstImage;
 		}
 	}
 }

@@ -82,8 +82,13 @@
 			button13 = CreateButton("KeyPoints", button13_Click);
 			tablePanel13 = CreateTableLayoutPanel(button13);
 
-			button14 = CreateButton("Left <- Right", button14_Click);
-			tablePanel14 = CreateTableLayoutPanel(button14);
+			button14 = CreateButton("Threshold", button14_Click);
+			thresholdLabel = CreateLabel(thresholdValue, "Value: ");
+			thresholdTrackBar = CreateParameterTrackBar(value => thresholdValue = (int)value, thresholdLabel, 1, 255, 2, 128, "Value: ");
+			tablePanel14 = CreateTableLayoutPanel(thresholdLabel, thresholdTrackBar, button14);
+
+			button15 = CreateButton("Left <- Right", button15_Click);
+			tablePanel15 = CreateTableLayoutPanel(button15);
 
 			tableLayoutPanel1.SuspendLayout();
             tableLayoutPanel2.SuspendLayout();
@@ -162,7 +167,8 @@
             flowLayoutPanel1.Controls.Add(tablePanel12);
             flowLayoutPanel1.Controls.Add(tablePanel13);
             flowLayoutPanel1.Controls.Add(tablePanel14);
-            flowLayoutPanel1.Dock = DockStyle.Fill;
+			flowLayoutPanel1.Controls.Add(tablePanel15);
+			flowLayoutPanel1.Dock = DockStyle.Fill;
             flowLayoutPanel1.Location = new Point(0, 929);
             flowLayoutPanel1.Margin = new Padding(0);
             flowLayoutPanel1.Name = "flowLayoutPanel1";
@@ -357,7 +363,13 @@
         private TableLayoutPanel tablePanel13;
         private Button button13;
 
-        private TableLayoutPanel tablePanel14;
-        private Button button14;
-    }
+		private TableLayoutPanel tablePanel14;
+		private Button button14;
+		public TrackBar thresholdTrackBar;
+		private Label thresholdLabel;
+		public int thresholdValue = 128;
+
+		private TableLayoutPanel tablePanel15;
+        private Button button15;
+	}
 }

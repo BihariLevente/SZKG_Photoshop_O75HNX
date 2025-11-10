@@ -30,7 +30,8 @@ namespace SZKG_Photoshop_O75HNX
 				AdjustGroupBoxAndButton(tablePanel12, button12);
                 AdjustGroupBoxAndButton(tablePanel13, button13);
                 AdjustGroupBoxAndButton(tablePanel14, button14);
-            };
+				AdjustGroupBoxAndButton(tablePanel15, button15);
+			};
 
 			string basepath = AppContext.BaseDirectory;
 			for (int i = 0; i < 4; i++)
@@ -52,7 +53,7 @@ namespace SZKG_Photoshop_O75HNX
 		private void AdjustGroupBoxAndButton(TableLayoutPanel tablePanel, Button button)
 		{
 			tablePanel.Height = flowLayoutPanel1.Height;
-			tablePanel.Width = flowLayoutPanel1.Width / 14;
+			tablePanel.Width = flowLayoutPanel1.Width / 15;
 		}
 
 		private void RunImageProcessingWithTimer(Action action, string methodName)
@@ -294,7 +295,27 @@ namespace SZKG_Photoshop_O75HNX
 			}
 		}
 
-        private void button14_Click(object sender, EventArgs e)
+		private void button14_Click(object sender, EventArgs e)
+		{
+			if (pictureBox1.Image != null)
+			{
+				Bitmap bmImage = new Bitmap(pictureBox1.Image);
+
+				if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
+				{
+					RunImageProcessingWithTimer(() =>
+					{
+						pictureBox2.Image = ImageProcessingAlgorithms.ThresholdImage(bmImage, thresholdValue);
+					}, "ThresholdImage");
+				}
+				else
+				{
+					MessageBox.Show("This function can only run on grayscale images.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				}
+			}
+		}
+
+		private void button15_Click(object sender, EventArgs e)
         {
             if (pictureBox2.Image != null)
             {
