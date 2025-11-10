@@ -74,9 +74,8 @@ namespace SZKG_Photoshop_O75HNX
 						byte b = (byte)currPixelValue;
 						byte g = (byte)(currPixelValue >> 8); // >> biteltolás jobbra
 						byte r = (byte)(currPixelValue >> 16);
-						byte a = (byte)(currPixelValue >> 24);
 
-						pRow[0] = ((uint)a << 24) | ((uint)gammaLUT[r] << 16) | ((uint)gammaLUT[g] << 8) | gammaLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
+						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)gammaLUT[r] << 16) | ((uint)gammaLUT[g] << 8) | gammaLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
 
 						pRow++;
 					}
@@ -121,9 +120,8 @@ namespace SZKG_Photoshop_O75HNX
 						byte b = (byte)(currPixelValue);
 						byte g = (byte)(currPixelValue >> 8); // >> biteltolás jobbra
 						byte r = (byte)(currPixelValue >> 16);
-						byte a = (byte)(currPixelValue >> 24);
 
-						pRow[0] = ((uint)a << 24) | ((uint)logLUT[r] << 16) | ((uint)logLUT[g] << 8) | logLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
+						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)logLUT[r] << 16) | ((uint)logLUT[g] << 8) | logLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
 
 						pRow++;
 					}
@@ -160,11 +158,10 @@ namespace SZKG_Photoshop_O75HNX
 						byte b = (byte)(currPixelValue);
 						byte g = (byte)(currPixelValue >> 8);
 						byte r = (byte)(currPixelValue >> 16);
-						byte a = (byte)(currPixelValue >> 24);
 
 						byte gray = (byte)((114 * b + 587 * g + 299 * r) / 1000);
 
-						pRow[0] = ((uint)a << 24) | ((uint)gray << 16) | ((uint)gray << 8) | gray;
+						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)gray << 16) | ((uint)gray << 8) | gray;
 
 						pRow++;
 					}
@@ -430,35 +427,57 @@ namespace SZKG_Photoshop_O75HNX
             return dstImage;
         }
 
-		private static double[,] CalculateGaussKernel(int kernelSize, int radius)
-		{
-			// ökölszabály sigma számítására
-			double sigma = 0.3 * ((kernelSize - 1) * 0.5 - 1) + 0.8;
-			double[,] kernel = new double[kernelSize, kernelSize];
-			double twoSigma2 = 2 * sigma * sigma;
-			double sum = 0.0;
+        private static readonly Dictionary<int, double[,]> gaussKernelCache = new();
 
-			// 2D Gauss-kernel előállítása
-			for (int y = -radius; y <= radius; y++)
-			{
-				for (int x = -radius; x <= radius; x++)
-				{
-					double exponent = -(x * x + y * y) / twoSigma2;
-					double value = Math.Exp(exponent) / (Math.PI * twoSigma2);
-					kernel[y + radius, x + radius] = value;
-					sum += value;
-				}
-			}
+        public static void InitGaussKernels(int maxKernelSize = 15)
+        {
+            for (int size = 3; size <= maxKernelSize; size+=2)
+            {
+                int radius = size / 2;
+                gaussKernelCache[size] = CalculateGaussKernel(size, radius);
+            }
+        }
 
-			// 2D Gauss-kernel (összeg 1)
-			for (int i = 0; i < kernelSize; i++)
-				for (int j = 0; j < kernelSize; j++)
-					kernel[i, j] /= sum;
+        private static double[,] GetGaussKernelFromCache(int kernelSize)
+        {
+            if (gaussKernelCache.TryGetValue(kernelSize, out var kernel))
+                return kernel;
 
-			return kernel;
-		}
+            int radius = kernelSize / 2;
+            kernel = CalculateGaussKernel(kernelSize, radius);
+            gaussKernelCache[kernelSize] = kernel;
+            return kernel;
+        }
 
-		public static Bitmap ApplyGaussianFilter(Bitmap srcImage, int kernelSize = 3)
+        private static double[,] CalculateGaussKernel(int kernelSize, int radius)
+        {
+            // ökölszabály sigma becslésére
+            double sigma = 0.3 * ((kernelSize - 1) * 0.5 - 1) + 0.8;
+            double[,] kernel = new double[kernelSize, kernelSize];
+            double twoSigma2 = 2 * sigma * sigma;
+            double sum = 0.0;
+
+            // 2D Gauss-kernel előállítása
+            for (int y = -radius; y <= radius; y++)
+            {
+                for (int x = -radius; x <= radius; x++)
+                {
+                    double exponent = -(x * x + y * y) / twoSigma2;
+                    double value = Math.Exp(exponent) / (Math.PI * twoSigma2);
+                    kernel[y + radius, x + radius] = value;
+                    sum += value;
+                }
+            }
+
+            // 2D Gauss-kernel (összeg 1)
+            for (int i = 0; i < kernelSize; i++)
+                for (int j = 0; j < kernelSize; j++)
+                    kernel[i, j] /= sum;
+
+            return kernel;
+        }
+
+        public static Bitmap ApplyGaussianFilter(Bitmap srcImage, int kernelSize = 3)
 		{
 			//TODO: optimize with 32bpp
 
@@ -476,9 +495,9 @@ namespace SZKG_Photoshop_O75HNX
 			int stride = srcBmData.Stride;
 			int radius = kernelSize / 2;
 
-			double[,] kernel = CalculateGaussKernel(kernelSize, radius);
+			double[,] kernel = GetGaussKernelFromCache(kernelSize);
 
-			unsafe
+            unsafe
             {
                 byte* pSrcBase = (byte*)srcBmData.Scan0;
                 byte* pDstBase = (byte*)dstBmData.Scan0;

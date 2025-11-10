@@ -45,13 +45,13 @@
 			tablePanel3 = CreateTableLayoutPanel(button3);
 
             button4 = CreateButton("GammaCorrect", button4_Click);
-            var gammaLabel = CreateLabel(gammaValue, "Gamma: ");
-            var gammaTrackBar = CreateParameterTrackBar(value => gammaValue = value, gammaLabel, 0.1, 10, 0.1, 1, "Gamma: ");
+            gammaLabel = CreateLabel(gammaValue, "Gamma: ");
+            gammaTrackBar = CreateParameterTrackBar(value => gammaValue = value, gammaLabel, 0.1, 10, 0.1, 1, "Gamma: ");
 			tablePanel4 = CreateTableLayoutPanel(gammaLabel, gammaTrackBar, button4);
 
             button5 = CreateButton("LogTransform", button5_Click);
-            var cLabel = CreateLabel(cValue, "C: ");
-            var cTrackBar = CreateParameterTrackBar(value => cValue = (int)value, cLabel, 5, 100, 1, 46, "C: ");
+            cLabel = CreateLabel(cValue, "C: ");
+            cTrackBar = CreateParameterTrackBar(value => cValue = (int)value, cLabel, 5, 100, 1, 46, "C: ");
 			tablePanel5 = CreateTableLayoutPanel(cLabel, cTrackBar, button5);
 
 			button6 = CreateButton("GrayScale", button6_Click);
@@ -64,13 +64,13 @@
 			tablePanel8 = CreateTableLayoutPanel(button8);
 
             button9 = CreateButton("BoxFilter", button9_Click);
-            var k1Label = CreateLabel(k1Value, "Kernel: ");
-            var k1TrackBar = CreateParameterTrackBar(value => k1Value = (int)value, k1Label, 1, 15, 2, 3, "Kernel: ");
+            k1Label = CreateLabel(k1Value, "Kernel: ");
+            k1TrackBar = CreateParameterTrackBar(value => k1Value = (int)value, k1Label, 3, 15, 2, 3, "Kernel: ");
 			tablePanel9 = CreateTableLayoutPanel(k1Label, k1TrackBar, button9);
 
 			button10 = CreateButton("GaussFilter", button10_Click);
-			var gaussLabel = CreateLabel(k1Value, "Kernel: ");
-			var k2TrackBar = CreateParameterTrackBar(value => k2Value = (int)value, gaussLabel, 1, 15, 2, 3, "Kernel: ");
+			gaussLabel = CreateLabel(k1Value, "Kernel: ");
+			k2TrackBar = CreateParameterTrackBar(value => k2Value = (int)value, gaussLabel, 3, 15, 2, 3, "Kernel: ");
             tablePanel10 = CreateTableLayoutPanel(gaussLabel, k2TrackBar, button10);
 
 			button11 = CreateButton("SobelEdge", button11_Click);
@@ -317,10 +317,14 @@
 
         private TableLayoutPanel tablePanel4;
         private Button button4;
+        public TrackBar gammaTrackBar;
+        private Label gammaLabel;
         public double gammaValue = 1.0;
 
         private TableLayoutPanel tablePanel5;
         private Button button5;
+        public TrackBar cTrackBar;
+        private Label cLabel;
         public int cValue = 46;
 
         private TableLayoutPanel tablePanel6;
@@ -334,11 +338,15 @@
 
         private TableLayoutPanel tablePanel9;
         private Button button9;
+        public TrackBar k1TrackBar;
+        private Label k1Label;
         public int k1Value = 3;
 
         private TableLayoutPanel tablePanel10;
         private Button button10;
-		public int k2Value = 3;
+        public TrackBar k2TrackBar;
+        private Label gaussLabel;
+        public int k2Value = 3;
 
 		private TableLayoutPanel tablePanel11;
         private Button button11;

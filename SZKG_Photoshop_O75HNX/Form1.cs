@@ -4,7 +4,7 @@ using System.Windows.Forms;
 
 namespace SZKG_Photoshop_O75HNX
 {
-	public partial class Form1 : Form
+    public partial class Form1 : Form
 	{
         int[] histR = new int[256];
         int[] histG = new int[256];
@@ -46,7 +46,9 @@ namespace SZKG_Photoshop_O75HNX
 				pictureBox1.Image = Image.FromFile(imagePath);
                 imgSizeLabel.Text = $"Image size:\n ({pictureBox1.Image.Width}, {pictureBox1.Image.Height})";
             }
-		}
+
+			ImageProcessingAlgorithms.InitGaussKernels();
+        }
 
 		private void AdjustGroupBoxAndButton(TableLayoutPanel tablePanel, Button button)
 		{
