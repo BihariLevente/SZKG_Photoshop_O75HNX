@@ -126,7 +126,43 @@ namespace SZKG_Photoshop_O75HNX
 			return srcImage;
 		}
 
-        public static Bitmap ConvertToGrayscale(Bitmap srcImage)
+		public static Bitmap ConvertToGrayscale(Bitmap srcImage)
+		{
+			int imgWidthPix = srcImage.Width;
+			int imgHeightPix = srcImage.Height;
+
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+
+			int stride = srcBmData.Stride;
+
+			unsafe
+			{
+				byte* pBase = (byte*)srcBmData.Scan0;
+
+				Parallel.For(0, imgHeightPix, y =>
+				{
+					uint* pRow = (uint*)(pBase + y * stride);
+
+					for (int x = 0; x < imgWidthPix; x++)
+					{
+						uint currPixelValue = pRow[0];
+
+						byte gray = (byte)((114 * (byte)(currPixelValue) + 587 * (byte)(currPixelValue >> 8) + 299 * (byte)(currPixelValue >> 16)) / 1000);
+
+						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)gray << 16) | ((uint)gray << 8) | gray;
+
+						pRow++;
+					}
+				});
+			}
+
+			srcImage.UnlockBits(srcBmData);
+
+			return srcImage;
+		}
+
+		public static Bitmap ConvertToGrayscale8bpp(Bitmap srcImage)
         {
             int imgWidthPix = srcImage.Width;
             int imgHeightPix = srcImage.Height;
@@ -186,14 +222,14 @@ namespace SZKG_Photoshop_O75HNX
             int[] histG = new int[256];
             int[] histR = new int[256];
 
-            BitmapData bmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+            BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
                 ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
-            int stride = bmData.Stride;
+            int stride = srcBmData.Stride;
 
             unsafe
             {
-                byte* pBase = (byte*)bmData.Scan0;
+                byte* pBase = (byte*)srcBmData.Scan0;
 
                 int processorCount = Environment.ProcessorCount;
                 var localB = new int[processorCount][];
@@ -244,7 +280,7 @@ namespace SZKG_Photoshop_O75HNX
                 }
             }
 
-            srcImage.UnlockBits(bmData);
+            srcImage.UnlockBits(srcBmData);
 
             return (histB, histG, histR);
         }
@@ -361,27 +397,29 @@ namespace SZKG_Photoshop_O75HNX
             histForm.Show();
         }
 
-        public static Bitmap ApplyBoxFilter(Bitmap srcImage, int kernelSize = 3)
-        {
-            int imgWidthPix = srcImage.Width;
-            int imgHeightPix = srcImage.Height;
+		public static Bitmap ApplyBoxFilter(Bitmap srcImage, int kernelSize = 3)
+		{
+			//TODO: optimize with 32bpp
 
-            Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format32bppArgb);
+			int imgWidthPix = srcImage.Width;
+			int imgHeightPix = srcImage.Height;
 
-            BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-                ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+			Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format32bppArgb);
 
-            BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-                ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
-            int stride = srcBmData.Stride;
-            int radius = kernelSize / 2;
-            int count = kernelSize * kernelSize;
+			BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
 
-            unsafe
-            {
-                byte* pSrcBase = (byte*)srcBmData.Scan0;
-                byte* pDstBase = (byte*)dstBmData.Scan0;
+			int stride = srcBmData.Stride;
+			int radius = kernelSize / 2;
+			int count = kernelSize * kernelSize;
+
+			unsafe
+			{
+				byte* pSrcBase = (byte*)srcBmData.Scan0;
+				byte* pDstBase = (byte*)dstBmData.Scan0;
 
 				for (int y = 0; y < imgHeightPix; y++)
 				{
@@ -391,13 +429,13 @@ namespace SZKG_Photoshop_O75HNX
 				}
 
 				Parallel.For(radius, imgHeightPix - radius, y =>
-                {
+				{
 					for (int x = radius; x < imgWidthPix - radius; x++)
 					{
 						int sumB = 0, sumG = 0, sumR = 0;
 
-                        int y0 = y - radius;   // ablak felső sora
-                        int x0 = x - radius;   // ablak bal széle
+						int x0 = x - radius;   // ablak bal széle
+						int y0 = y - radius;   // ablak felső sora
 
 						for (int ky = 0; ky < kernelSize; ky++)
 						{
@@ -405,31 +443,31 @@ namespace SZKG_Photoshop_O75HNX
 
 							for (int kx = 0; kx < kernelSize; kx++)
 							{
-                                uint currPixelValue = pWindow[0];
+								uint currPixelValue = pWindow[0];
 
-                                sumB += (byte)(currPixelValue);
-                                sumG += (byte)(currPixelValue >> 8);
-                                sumR += (byte)(currPixelValue >> 16);
+								sumB += (byte)(currPixelValue);
+								sumG += (byte)(currPixelValue >> 8);
+								sumR += (byte)(currPixelValue >> 16);
 
 								pWindow++;
 							}
 						}
 
-                        uint* dstPix = (uint*)(pSrcBase + y * stride + x * 4);
-                        uint alpha = dstPix[0] & 0xFF000000;
+						uint* dstPix = (uint*)(pSrcBase + y * stride + x * 4);
+						uint alpha = dstPix[0] & 0xFF000000;
 
-                        dstPix[0] = alpha | ((uint)sumR << 16) | ((uint)sumG << 8) | (uint)sumB;
-                    }
+						dstPix[0] = alpha | ((uint)sumR << 16) | ((uint)sumG << 8) | (uint)sumB;
+					}
 				});
-            }
+			}
 
-            srcImage.UnlockBits(srcBmData);
-            dstImage.UnlockBits(dstBmData);
+			srcImage.UnlockBits(srcBmData);
+			dstImage.UnlockBits(dstBmData);
 
-            return dstImage;
-        }
+			return dstImage;
+		}
 
-        private static readonly Dictionary<int, double[,]> gaussKernelCache = new();
+		private static readonly Dictionary<int, double[,]> gaussKernelCache = new();
 
         public static void InitGaussKernels(int maxKernelSize = 5)
         {
@@ -549,8 +587,59 @@ namespace SZKG_Photoshop_O75HNX
             return dstImage;
         }
 
-        // Sobel X kernel
-        private static readonly int[,] sobelX = new int[,]
+		public static bool IsGrayscale(Bitmap srcImage, int tolerance = 0)
+		{
+			int bpp = Image.GetPixelFormatSize(srcImage.PixelFormat) / 8;
+
+			if (srcImage.PixelFormat == PixelFormat.Format8bppIndexed) return true;
+			if (bpp != 3 && bpp != 4) return false; // bpp nem 1, nem 3, nem 4 -> speciális formátum
+
+			int imgWidthPix = srcImage.Width;
+			int imgHeightPix = srcImage.Height;
+
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.ReadOnly, srcImage.PixelFormat);
+
+			int stride = srcBmData.Stride;
+
+			unsafe
+			{
+				byte* pBase = (byte*)srcBmData.Scan0;
+
+				int stepY = Math.Max(1, imgHeightPix / 64);
+				int stepX = Math.Max(1, imgWidthPix / 64);
+
+				for (int y = 0; y < imgHeightPix; y += stepY)
+				{
+					byte* pRow = pBase + y * stride;
+
+					for (int x = 0; x < imgWidthPix; x += stepX)
+					{
+						byte b = pRow[0];
+						byte g = pRow[1];
+						byte r = pRow[2];
+
+						int maxc = Math.Max(r, Math.Max(g, b));
+						int minc = Math.Min(r, Math.Min(g, b));
+
+						if (maxc - minc > tolerance)
+						{
+							srcImage.UnlockBits(srcBmData);
+							return false;
+						}
+
+						pRow += bpp;
+					}
+				}
+			}
+
+			srcImage.UnlockBits(srcBmData);
+
+			return true;
+		}
+
+		// Sobel X kernel
+		private static readonly int[,] sobelX = new int[,]
         {
 			{ 1, 0, -1 },
 			{ 2, 0, -2 },

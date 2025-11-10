@@ -94,7 +94,7 @@ namespace SZKG_Photoshop_O75HNX
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     ImageFormat format = ImageFormat.Png;
-                    string ext = System.IO.Path.GetExtension(saveFileDialog.FileName).ToLower();
+                    string ext = Path.GetExtension(saveFileDialog.FileName).ToLower();
 
                     switch (ext)
                     {
@@ -120,8 +120,11 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				//Bitmap bmImage = new Bitmap(pictureBox1.Image); // TANULSÁG: new Bitmap mindig 32 bpp-s képet hoz létre, ha konvertálunk (Bitmap)-al, akkor az eredeti bpp megmarad
-				Bitmap bmImage = (Bitmap)pictureBox1.Image;
+				// TANULSÁG: new Bitmap(Image) mindig 32 bpp-s képet hoz létre
+				// viszont ha konvertálunk (Bitmap)-al, akkor az eredeti bpp megmarad, de ilyenkor nem az értékét, hanem a referenciáját adja át
+				// ha clone-ozunk akkor viszont NAGYON lassul a képfeldolgozás 30-40 ms -> 400-500 ms
+
+				Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
 				RunImageProcessingWithTimer(() =>
 				{
@@ -134,7 +137,7 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				Bitmap bmImage = (Bitmap)pictureBox1.Image;
+				Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
 				RunImageProcessingWithTimer(() =>
 				{
@@ -147,7 +150,7 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				Bitmap bmImage = (Bitmap)pictureBox1.Image;
+				Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
 				RunImageProcessingWithTimer(() =>
 				{
@@ -160,7 +163,7 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				Bitmap bmImage = (Bitmap)pictureBox1.Image;
+				Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
 				RunImageProcessingWithTimer(() =>
 				{
@@ -173,7 +176,7 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				Bitmap bmImage = (Bitmap)pictureBox1.Image;
+				Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
 				RunImageProcessingWithTimer(() =>
 				{
@@ -209,7 +212,7 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				Bitmap bmImage = (Bitmap)pictureBox1.Image;
+				Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
 				RunImageProcessingWithTimer(() =>
 				{
@@ -222,7 +225,7 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				Bitmap bmImage = (Bitmap)pictureBox1.Image;
+				Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
 				RunImageProcessingWithTimer(() =>
 				{
@@ -235,9 +238,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				Bitmap bmImage = (Bitmap)pictureBox1.Image;
+				Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
-				if (bmImage.PixelFormat == PixelFormat.Format8bppIndexed)
+				if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
 				{
 					RunImageProcessingWithTimer(() =>
 					{
@@ -255,9 +258,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				Bitmap bmImage = (Bitmap)pictureBox1.Image;
+				Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
-				if (bmImage.PixelFormat == PixelFormat.Format8bppIndexed)
+				if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
 				{
 					RunImageProcessingWithTimer(() =>
 					{
@@ -275,9 +278,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				Bitmap bmImage = (Bitmap)pictureBox1.Image;
+				Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
-				if (bmImage.PixelFormat == PixelFormat.Format8bppIndexed)
+				if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
 				{
 					RunImageProcessingWithTimer(() =>
 					{
