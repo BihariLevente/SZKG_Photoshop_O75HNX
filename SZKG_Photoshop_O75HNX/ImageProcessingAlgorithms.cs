@@ -173,14 +173,14 @@ namespace SZKG_Photoshop_O75HNX
             return srcImage;
         }
 
-        public static (int[] histR, int[] histG, int[] histB) ComputeHistogram(Bitmap srcImage)
+        public static (int[] histB, int[] histG, int[] histR) ComputeHistogram(Bitmap srcImage)
         {
             int imgWidthPix = srcImage.Width;
             int imgHeightPix = srcImage.Height;
 
-            int[] histR = new int[256];
-            int[] histG = new int[256];
             int[] histB = new int[256];
+            int[] histG = new int[256];
+            int[] histR = new int[256];
 
             BitmapData bmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
                 ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
@@ -192,15 +192,15 @@ namespace SZKG_Photoshop_O75HNX
                 byte* pBase = (byte*)bmData.Scan0;
 
                 int processorCount = Environment.ProcessorCount;
-                var localR = new int[processorCount][];
-                var localG = new int[processorCount][];
                 var localB = new int[processorCount][];
+                var localG = new int[processorCount][];
+                var localR = new int[processorCount][];
 
                 for (int i = 0; i < processorCount; i++)
                 {
-                    localR[i] = new int[256];
-                    localG[i] = new int[256];
                     localB[i] = new int[256];
+                    localG[i] = new int[256];
+                    localR[i] = new int[256];
                 }
 				Parallel.For(0, processorCount, i =>
                 {
@@ -208,9 +208,9 @@ namespace SZKG_Photoshop_O75HNX
 					int startY = i * imgHeightPix / processorCount;
                     int endY = (i + 1) * imgHeightPix / processorCount;
 
-                    int[] lr = localR[i];
-                    int[] lg = localG[i];
                     int[] lb = localB[i];
+                    int[] lg = localG[i];
+                    int[] lr = localR[i];
 
                     for (int y = startY; y < endY; y++)
                     {
@@ -237,79 +237,80 @@ namespace SZKG_Photoshop_O75HNX
                 {
                     for (int j = 0; j < 256; j++)
                     {
-                        histR[j] += localR[i][j];
-                        histG[j] += localG[i][j];
                         histB[j] += localB[i][j];
+                        histG[j] += localG[i][j];
+                        histR[j] += localR[i][j];
                     }
                 }
             }
 
             srcImage.UnlockBits(bmData);
 
-            return (histR, histG, histB);
+            return (histB, histG, histR);
         }
 
-        public static (int[], int[], int[]) EqualizeHistogram(int[] histR, int[] histG, int[] histB)
+        public static (int[], int[], int[]) EqualizeHistogram(int[] histB, int[] histG, int[] histR)
 		{
 			//Képlet: s = T(r) = (L - 1)*Σp_A(i) <--- (i 0-tól r-ig)
 
-			int L = 256;
-            int totalPixelsR = histR.Sum();
-            int totalPixelsG = histG.Sum();
-            int totalPixelsB = histB.Sum();
+			int L = histR.Count();
 
-            double[] pR = new double[L];
-            double[] pG = new double[L];
+            int sumB = histB.Sum();
+            int sumG = histG.Sum();
+            int sumR = histR.Sum();
+
             double[] pB = new double[L];
+            double[] pG = new double[L];
+            double[] pR = new double[L];
 
             for (int i = 0; i < L; i++)
             {
-                pR[i] = (double)histR[i] / totalPixelsR;
-                pG[i] = (double)histG[i] / totalPixelsG;
-                pB[i] = (double)histB[i] / totalPixelsB;
+                pB[i] = (double)histB[i] / sumB;
+                pG[i] = (double)histG[i] / sumG;
+                pR[i] = (double)histR[i] / sumR;
             }
 
-            double[] cdfR = new double[L];
-            double[] cdfG = new double[L];
             double[] cdfB = new double[L];
+            double[] cdfG = new double[L];
+            double[] cdfR = new double[L];
 
-            cdfR[0] = pR[0];
-            cdfG[0] = pG[0];
             cdfB[0] = pB[0];
+            cdfG[0] = pG[0];
+            cdfR[0] = pR[0];
 
             for (int i = 1; i < L; i++)
             {
-                cdfR[i] = cdfR[i - 1] + pR[i];
-                cdfG[i] = cdfG[i - 1] + pG[i];
                 cdfB[i] = cdfB[i - 1] + pB[i];
+                cdfG[i] = cdfG[i - 1] + pG[i];
+                cdfR[i] = cdfR[i - 1] + pR[i];
             }
 
-            int[] mapR = new int[L];
-            int[] mapG = new int[L];
             int[] mapB = new int[L];
+            int[] mapG = new int[L];
+            int[] mapR = new int[L];
 
             for (int i = 0; i < L; i++)
             {
-                mapR[i] = (int)Math.Round((L - 1) * cdfR[i]);
-                mapG[i] = (int)Math.Round((L - 1) * cdfG[i]);
                 mapB[i] = (int)Math.Round((L - 1) * cdfB[i]);
+                mapG[i] = (int)Math.Round((L - 1) * cdfG[i]);
+                mapR[i] = (int)Math.Round((L - 1) * cdfR[i]);
             }
 
-            int[] eqHistR = new int[L];
-            int[] eqHistG = new int[L];
             int[] eqHistB = new int[L];
+            int[] eqHistG = new int[L];
+            int[] eqHistR = new int[L];
 
             for (int i = 0; i < L; i++)
             {
-                eqHistR[mapR[i]] += histR[i];
-                eqHistG[mapG[i]] += histG[i];
                 eqHistB[mapB[i]] += histB[i];
+                eqHistG[mapG[i]] += histG[i];
+                eqHistR[mapR[i]] += histR[i];
             }
 
-            return (eqHistR, eqHistG, eqHistB);
+            return (eqHistB, eqHistG, eqHistR);
         }
 
-        public static void ShowHistogram(int[] histR, int[] histG, int[] histB, string titleText)
+        public static void ShowHistogram(int[] histB, int[] histG, int[] histR, string titleText)
         {
             var histForm = new Form
             {
@@ -325,8 +326,8 @@ namespace SZKG_Photoshop_O75HNX
                 int width = histForm.ClientSize.Width;
                 int height = histForm.ClientSize.Height;
 
-                int bgrMax = Math.Max(histR.Max(), Math.Max(histG.Max(), histB.Max()));
-                int bgrWidth = width / histR.Length;
+                int bgrMax = Math.Max(histB.Max(), Math.Max(histG.Max(), histR.Max()));
+                int bgrWidth = width / histB.Length;
                 int barWidth = bgrWidth / 3;
                 int barSpacing = 1;
 
@@ -429,7 +430,7 @@ namespace SZKG_Photoshop_O75HNX
 
         private static readonly Dictionary<int, double[,]> gaussKernelCache = new();
 
-        public static void InitGaussKernels(int maxKernelSize = 15)
+        public static void InitGaussKernels(int maxKernelSize = 5)
         {
             for (int size = 3; size <= maxKernelSize; size+=2)
             {

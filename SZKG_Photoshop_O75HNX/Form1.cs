@@ -47,7 +47,7 @@ namespace SZKG_Photoshop_O75HNX
                 imgSizeLabel.Text = $"Image size:\n ({pictureBox1.Image.Width}, {pictureBox1.Image.Height})";
             }
 
-			ImageProcessingAlgorithms.InitGaussKernels();
+			ImageProcessingAlgorithms.InitGaussKernels(k2TrackBar.Maximum * 2 + 3);
         }
 
 		private void AdjustGroupBoxAndButton(TableLayoutPanel tablePanel, Button button)
@@ -177,26 +177,26 @@ namespace SZKG_Photoshop_O75HNX
 
                 RunImageProcessingWithTimer(() =>
 				{
-                    (histR, histG, histB) = ImageProcessingAlgorithms.ComputeHistogram(bmImage);
+                    (histB, histG, histR) = ImageProcessingAlgorithms.ComputeHistogram(bmImage);
                 }, "ComputeHistogram");
                 RunImageProcessingWithTimer(() =>
                 {
-                    ImageProcessingAlgorithms.ShowHistogram(histR, histG, histB, "Histrogram");
+                    ImageProcessingAlgorithms.ShowHistogram(histB, histG, histR, "Histrogram");
                 }, "ShowHistogram");
             }
 		}
 
 		private void button8_Click(object sender, EventArgs e)
 		{
-            if (!(histR.All(r => r == 0) && histG.All(g => g == 0) && histB.All(b => b == 0)))
+            if (!(histR.All(b => b == 0) && histG.All(g => g == 0) && histB.All(r => r == 0)))
             {
                 RunImageProcessingWithTimer(() =>
                 {
-                    (histR, histG, histB) = ImageProcessingAlgorithms.EqualizeHistogram(histR, histG, histB);
+                    (histB, histG, histR) = ImageProcessingAlgorithms.EqualizeHistogram(histB, histG, histR);
                 }, "ShowEqualizedHistogram");
 				RunImageProcessingWithTimer(() =>
 				{
-					ImageProcessingAlgorithms.ShowHistogram(histR, histG, histB, "Histrogram");
+					ImageProcessingAlgorithms.ShowHistogram(histB, histG, histR, "Histrogram");
 				}, "ShowHistogram");
 			}
             else
