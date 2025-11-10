@@ -604,17 +604,17 @@ namespace SZKG_Photoshop_O75HNX
         // Sobel X kernel
         private int[,] sobelX = new int[,]
         {
-			{ -1, 0, 1 },
-			{ -2, 0, 2 },
-			{ -1, 0, 1 }
+			{ 1, 0, -1 },
+			{ 2, 0, -2 },
+			{ 1, 0, -1 }
         };
 
         // Sobel Y kernel
         private int[,] sobelY = new int[,]
         {
-			{ -1, -2, -1 },
+			{  1,  2,  1 },
 			{  0,  0,  0 },
-			{  1,  2,  1 }
+			{ -1, -2, -1 }
         };
 
         public static Bitmap ApplySobelEdgeDetection(Bitmap srcImage)
