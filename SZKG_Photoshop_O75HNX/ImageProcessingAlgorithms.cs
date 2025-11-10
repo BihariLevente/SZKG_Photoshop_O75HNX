@@ -410,7 +410,7 @@ namespace SZKG_Photoshop_O75HNX
 				ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
 			BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+				ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
 
 			int stride = srcBmData.Stride;
 			int radius = kernelSize / 2;
@@ -434,8 +434,8 @@ namespace SZKG_Photoshop_O75HNX
 					{
 						int sumB = 0, sumG = 0, sumR = 0;
 
-						int x0 = x - radius;   // ablak bal széle
 						int y0 = y - radius;   // ablak felső sora
+						int x0 = x - radius;   // ablak bal széle
 
 						for (int ky = 0; ky < kernelSize; ky++)
 						{
@@ -453,10 +453,10 @@ namespace SZKG_Photoshop_O75HNX
 							}
 						}
 
-						uint* dstPix = (uint*)(pSrcBase + y * stride + x * 4);
+						uint* dstPix = (uint*)(pDstBase + y * stride + x * 4);
 						uint alpha = dstPix[0] & 0xFF000000;
 
-						dstPix[0] = alpha | ((uint)sumR << 16) | ((uint)sumG << 8) | (uint)sumB;
+						dstPix[0] = alpha | ((uint)(sumR / count) << 16) | ((uint)(sumG / count) << 8) | (uint)(sumB / count);
 					}
 				});
 			}
@@ -528,7 +528,7 @@ namespace SZKG_Photoshop_O75HNX
                 ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
             BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-                ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+                ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
 
             int stride = srcBmData.Stride;
             int radius = kernelSize / 2;
