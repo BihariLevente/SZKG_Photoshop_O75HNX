@@ -553,8 +553,9 @@ namespace SZKG_Photoshop_O75HNX
 		public static bool IsGrayscale(Bitmap srcImage, int tolerance = 0)
 		{
 			int bpp = Image.GetPixelFormatSize(srcImage.PixelFormat) / 8;
+			
 			if (srcImage.PixelFormat == PixelFormat.Format8bppIndexed) return true;
-			if (bpp != 3 && bpp != 4) return false;
+			if (bpp != 3 && bpp != 4) return false; // bpp nem 1, nem 3, nem 4 -> speciális formátum
 
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
@@ -564,36 +565,59 @@ namespace SZKG_Photoshop_O75HNX
 
 			int stride = srcBmData.Stride;
 
-			try
-			{
-				unsafe
-				{
-					byte* pBase = (byte*)srcBmData.Scan0;
+            unsafe
+            {
+                byte* pBase = (byte*)srcBmData.Scan0;
 
-					int stepY = Math.Max(1, srcImage.Height / 64);
-					int stepX = Math.Max(1, srcImage.Width / 64);
+                int stepY = Math.Max(1, imgHeightPix / 64);
+                int stepX = Math.Max(1, imgWidthPix / 64);
 
-					for (int y = 0; y < srcImage.Height; y += stepY)
-					{
-						byte* pRow = pBase + y * stride;
+                for (int y = 0; y < imgHeightPix; y += stepY)
+                {
+                    byte* pRow = pBase + y * stride;
 
-						for (int x = 0; x < srcImage.Width; x += stepX)
+                    for (int x = 0; x < imgWidthPix; x += stepX)
+                    {
+                        byte b = pRow[0];
+                        byte g = pRow[1];
+                        byte r = pRow[2];
+
+                        int maxc = Math.Max(r, Math.Max(g, b));
+                        int minc = Math.Min(r, Math.Min(g, b));
+
+						if (maxc - minc > tolerance)
 						{
-							byte b = pRow[x * bpp + 0];
-							byte g = pRow[x * bpp + 1];
-							byte r = pRow[x * bpp + 2];
-							int maxc = Math.Max(r, Math.Max(g, b));
-							int minc = Math.Min(r, Math.Min(g, b));
-							if (maxc - minc > tolerance) return false;
+                            srcImage.UnlockBits(srcBmData);
+                            return false;
 						}
-					}
-				}
-				return true;
-			}
-			finally { srcImage.UnlockBits(srcBmData); }
+
+						pRow += bpp;
+                    }
+                }
+            }
+
+            srcImage.UnlockBits(srcBmData);
+
+            return true;
 		}
 
-		public static Bitmap ApplySobelEdgeDetection(Bitmap srcImage)
+        // Sobel X kernel
+        private int[,] sobelX = new int[,]
+        {
+			{ -1, 0, 1 },
+			{ -2, 0, 2 },
+			{ -1, 0, 1 }
+        };
+
+        // Sobel Y kernel
+        private int[,] sobelY = new int[,]
+        {
+			{ -1, -2, -1 },
+			{  0,  0,  0 },
+			{  1,  2,  1 }
+        };
+
+        public static Bitmap ApplySobelEdgeDetection(Bitmap srcImage)
 		{
 			//TODO: to write the function with 32bpp
 
