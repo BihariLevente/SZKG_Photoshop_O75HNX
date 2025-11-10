@@ -347,8 +347,6 @@ namespace SZKG_Photoshop_O75HNX
 
         public static Bitmap ApplyBoxFilter(Bitmap srcImage, int kernelSize = 3)
         {
-			//TODO: optimize with 32bpp
-
             int imgWidthPix = srcImage.Width;
             int imgHeightPix = srcImage.Height;
 
