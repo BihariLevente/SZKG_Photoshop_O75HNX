@@ -1,5 +1,6 @@
 ﻿using System.Drawing.Imaging;
 using System.Runtime.Intrinsics.Arm;
+using System.Xml.Linq;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace SZKG_Photoshop_O75HNX
@@ -17,7 +18,7 @@ namespace SZKG_Photoshop_O75HNX
 				ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
 
 			// teljes sorhossz (stride) = (hasznos bájtok száma) + (igazítás 4 byte-ra), de esetemben nincs offset
-			// [B][G][R][A][B][G][R][A]...[offset]
+			// [B][G][R][B][G][R]...[offset]
 			int stride = bmData.Stride;
 
 			unsafe
@@ -130,35 +131,50 @@ namespace SZKG_Photoshop_O75HNX
             int imgWidthPix = srcImage.Width;
             int imgHeightPix = srcImage.Height;
 
-			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-                ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+			Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format8bppIndexed);
 
-            int stride = srcBmData.Stride;
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+                ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+
+			ColorPalette pal = dstImage.Palette;
+			for (int i = 0; i < 256; i++)
+            {
+				pal.Entries[i] = Color.FromArgb(i, i, i);
+			}
+			dstImage.Palette = pal;
+
+			BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed);
+
+			int sStride = srcBmData.Stride;
+			int dStride = dstBmData.Stride;
 
 			unsafe
             {
-                byte* pBase = (byte*)srcBmData.Scan0;
+				byte* pSrcBase = (byte*)srcBmData.Scan0;
+				byte* pDstBase = (byte*)dstBmData.Scan0;
 
 				Parallel.For(0, imgHeightPix, y =>
                 {
-                    uint* pRow = (uint*)(pBase + y * stride);
+					uint* pSrcRow = (uint*)(pSrcBase + y * sStride);
+					byte* pDstRow = pDstBase + y * dStride;
 
 					for (int x = 0; x < imgWidthPix; x++)
                     {
-						uint currPixelValue = pRow[0];
+						uint currPixelValue = pSrcRow[0];
 
-						byte gray = (byte)((114 * (byte)(currPixelValue) + 587 * (byte)(currPixelValue >> 8) + 299 * (byte)(currPixelValue >> 16)) / 1000);
+						pDstRow[0] = (byte)((114 * (byte)(currPixelValue) + 587 * (byte)(currPixelValue >> 8) + 299 * (byte)(currPixelValue >> 16)) / 1000);
 
-						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)gray << 16) | ((uint)gray << 8) | gray;
-
-						pRow++;
+						pSrcRow++;
+                        pDstRow++;
 					}
                 });
             }
 
             srcImage.UnlockBits(srcBmData);
+			dstImage.UnlockBits(dstBmData);
 
-            return srcImage;
+			return dstImage;
         }
 
         public static (int[] histB, int[] histG, int[] histR) ComputeHistogram(Bitmap srcImage)
@@ -533,57 +549,6 @@ namespace SZKG_Photoshop_O75HNX
             return dstImage;
         }
 
-        public static bool IsGrayscale(Bitmap srcImage, int tolerance = 0)
-		{
-			int bpp = Image.GetPixelFormatSize(srcImage.PixelFormat) / 8;
-			
-			if (srcImage.PixelFormat == PixelFormat.Format8bppIndexed) return true;
-			if (bpp != 3 && bpp != 4) return false; // bpp nem 1, nem 3, nem 4 -> speciális formátum
-
-			int imgWidthPix = srcImage.Width;
-			int imgHeightPix = srcImage.Height;
-
-			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.ReadOnly, srcImage.PixelFormat);
-
-			int stride = srcBmData.Stride;
-
-            unsafe
-            {
-                byte* pBase = (byte*)srcBmData.Scan0;
-
-                int stepY = Math.Max(1, imgHeightPix / 64);
-                int stepX = Math.Max(1, imgWidthPix / 64);
-
-                for (int y = 0; y < imgHeightPix; y += stepY)
-                {
-                    byte* pRow = pBase + y * stride;
-
-                    for (int x = 0; x < imgWidthPix; x += stepX)
-                    {
-                        byte b = pRow[0];
-                        byte g = pRow[1];
-                        byte r = pRow[2];
-
-                        int maxc = Math.Max(r, Math.Max(g, b));
-                        int minc = Math.Min(r, Math.Min(g, b));
-
-						if (maxc - minc > tolerance)
-						{
-                            srcImage.UnlockBits(srcBmData);
-                            return false;
-						}
-
-						pRow += bpp;
-                    }
-                }
-            }
-
-            srcImage.UnlockBits(srcBmData);
-
-            return true;
-		}
-
         // Sobel X kernel
         private static readonly int[,] sobelX = new int[,]
         {
@@ -607,21 +572,21 @@ namespace SZKG_Photoshop_O75HNX
 
             Bitmap dstImage = new Bitmap(width, height, PixelFormat.Format32bppArgb);
 
-            BitmapData srcData = srcImage.LockBits(new Rectangle(0, 0, width, height),
+            BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, width, height),
                 ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
-            BitmapData dstData = dstImage.LockBits(new Rectangle(0, 0, width, height),
+            BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, width, height),
                 ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
 
-            int stride = srcData.Stride;
+            int stride = srcBmData.Stride;
 
             int[,] gx = new int[,] { { 1, 0, -1 }, { 2, 0, -2 }, { 1, 0, -1 } };
             int[,] gy = new int[,] { { 1, 2, 1 }, { 0, 0, 0 }, { -1, -2, -1 } };
 
             unsafe
             {
-                byte* pSrcBase = (byte*)srcData.Scan0;
-                byte* pDstBase = (byte*)dstData.Scan0;
+                byte* pSrcBase = (byte*)srcBmData.Scan0;
+                byte* pDstBase = (byte*)dstBmData.Scan0;
 
                 Parallel.For(1, height - 1, y =>
                 {
@@ -651,8 +616,8 @@ namespace SZKG_Photoshop_O75HNX
                 });
             }
 
-            srcImage.UnlockBits(srcData);
-            dstImage.UnlockBits(dstData);
+            srcImage.UnlockBits(srcBmData);
+            dstImage.UnlockBits(dstBmData);
 
             return dstImage;
         }

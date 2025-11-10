@@ -1,10 +1,9 @@
 using System.Diagnostics;
 using System.Drawing.Imaging;
-using System.Windows.Forms;
 
 namespace SZKG_Photoshop_O75HNX
 {
-    public partial class Form1 : Form
+	public partial class Form1 : Form
 	{
         int[] histR = new int[256];
         int[] histG = new int[256];
@@ -121,9 +120,10 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+				//Bitmap bmImage = new Bitmap(pictureBox1.Image); // TANULSÁG: new Bitmap mindig 32 bpp-s képet hoz létre, ha konvertálunk (Bitmap)-al, akkor az eredeti bpp megmarad
+				Bitmap bmImage = (Bitmap)pictureBox1.Image;
 
-                RunImageProcessingWithTimer(() =>
+				RunImageProcessingWithTimer(() =>
 				{
 					pictureBox2.Image = ImageProcessingAlgorithms.InvertImage(bmImage);
 				}, "InvertImage");
@@ -134,9 +134,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+				Bitmap bmImage = (Bitmap)pictureBox1.Image;
 
-                RunImageProcessingWithTimer(() =>
+				RunImageProcessingWithTimer(() =>
 				{
 					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGammaTransform(bmImage, gammaValue);
 				}, "ApplyGammaCorrection");
@@ -147,9 +147,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+				Bitmap bmImage = (Bitmap)pictureBox1.Image;
 
-                RunImageProcessingWithTimer(() =>
+				RunImageProcessingWithTimer(() =>
 				{
 					pictureBox2.Image = ImageProcessingAlgorithms.ApplyLogTransform(bmImage, cValue);
 				}, "ApplyLogTransform");
@@ -160,9 +160,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+				Bitmap bmImage = (Bitmap)pictureBox1.Image;
 
-                RunImageProcessingWithTimer(() =>
+				RunImageProcessingWithTimer(() =>
 				{
 					pictureBox2.Image = ImageProcessingAlgorithms.ConvertToGrayscale(bmImage);
 				}, "ConvertToGrayscale");
@@ -173,9 +173,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-				Bitmap bmImage = new Bitmap(pictureBox1.Image);
+				Bitmap bmImage = (Bitmap)pictureBox1.Image;
 
-                RunImageProcessingWithTimer(() =>
+				RunImageProcessingWithTimer(() =>
 				{
                     (histB, histG, histR) = ImageProcessingAlgorithms.ComputeHistogram(bmImage);
                 }, "ComputeHistogram");
@@ -209,9 +209,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+				Bitmap bmImage = (Bitmap)pictureBox1.Image;
 
-                RunImageProcessingWithTimer(() =>
+				RunImageProcessingWithTimer(() =>
 				{
 					pictureBox2.Image = ImageProcessingAlgorithms.ApplyBoxFilter(bmImage, k1Value);
 				}, "ApplyBoxFilter");
@@ -222,9 +222,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+				Bitmap bmImage = (Bitmap)pictureBox1.Image;
 
-                RunImageProcessingWithTimer(() =>
+				RunImageProcessingWithTimer(() =>
 				{
 					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGaussianFilter(bmImage, k2Value);
 				}, "ApplyGaussianFilter");
@@ -235,9 +235,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-                Bitmap bmImage = new Bitmap(pictureBox1.Image);
-			
-				if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
+				Bitmap bmImage = (Bitmap)pictureBox1.Image;
+
+				if (bmImage.PixelFormat == PixelFormat.Format8bppIndexed)
 				{
 					RunImageProcessingWithTimer(() =>
 					{
@@ -255,9 +255,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+				Bitmap bmImage = (Bitmap)pictureBox1.Image;
 
-				if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
+				if (bmImage.PixelFormat == PixelFormat.Format8bppIndexed)
 				{
 					RunImageProcessingWithTimer(() =>
 					{
@@ -275,9 +275,9 @@ namespace SZKG_Photoshop_O75HNX
 		{
 			if (pictureBox1.Image != null)
 			{
-                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+				Bitmap bmImage = (Bitmap)pictureBox1.Image;
 
-				if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
+				if (bmImage.PixelFormat == PixelFormat.Format8bppIndexed)
 				{
 					RunImageProcessingWithTimer(() =>
 					{
