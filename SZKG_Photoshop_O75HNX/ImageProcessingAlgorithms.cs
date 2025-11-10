@@ -71,9 +71,7 @@ namespace SZKG_Photoshop_O75HNX
 					{
 						uint currPixelValue = pRow[0];
 
-						byte b = (byte)currPixelValue;
-						byte g = (byte)(currPixelValue >> 8); // >> biteltolás jobbra
-						byte r = (byte)(currPixelValue >> 16);
+						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)gammaLUT[(byte)(currPixelValue >> 16)] << 16) | ((uint)gammaLUT[(byte)(currPixelValue >> 8)] << 8) | gammaLUT[(byte)currPixelValue]; // >> biteltolás balra, Look Up Table alkalmazása
 
 						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)gammaLUT[r] << 16) | ((uint)gammaLUT[g] << 8) | gammaLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
 
@@ -117,9 +115,7 @@ namespace SZKG_Photoshop_O75HNX
 					{
 						uint currPixelValue = pRow[0];
 
-						byte b = (byte)(currPixelValue);
-						byte g = (byte)(currPixelValue >> 8); // >> biteltolás jobbra
-						byte r = (byte)(currPixelValue >> 16);
+						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)logLUT[(byte)(currPixelValue >> 16)] << 16) | ((uint)logLUT[(byte)(currPixelValue >> 8)] << 8) | logLUT[(byte)(currPixelValue)]; // >> biteltolás balra, Look Up Table alkalmazása
 
 						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)logLUT[r] << 16) | ((uint)logLUT[g] << 8) | logLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
 
@@ -155,9 +151,7 @@ namespace SZKG_Photoshop_O75HNX
                     {
 						uint currPixelValue = pRow[0];
 
-						byte b = (byte)(currPixelValue);
-						byte g = (byte)(currPixelValue >> 8);
-						byte r = (byte)(currPixelValue >> 16);
+						byte gray = (byte)((114 * (byte)(currPixelValue) + 587 * (byte)(currPixelValue >> 8) + 299 * (byte)(currPixelValue >> 16)) / 1000);
 
 						byte gray = (byte)((114 * b + 587 * g + 299 * r) / 1000);
 
@@ -220,9 +214,9 @@ namespace SZKG_Photoshop_O75HNX
                         {
 							uint currPixelValue = pRow[0];
 
-							byte b = (byte)(currPixelValue);
-							byte g = (byte)(currPixelValue >> 8);
-							byte r = (byte)(currPixelValue >> 16);
+							lb[(byte)(currPixelValue)]++;
+                            lg[(byte)(currPixelValue >> 8)]++;
+                            lr[(byte)(currPixelValue >> 16)]++;
 
 							lb[b]++;
                             lg[g]++;
