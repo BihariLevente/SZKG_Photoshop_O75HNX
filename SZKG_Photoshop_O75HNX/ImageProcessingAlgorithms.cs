@@ -1,5 +1,7 @@
-﻿using System.Drawing.Imaging;
+﻿using System.Drawing;
+using System.Drawing.Imaging;
 using System.Runtime.Intrinsics.Arm;
+using System.Windows.Forms.VisualStyles;
 using System.Xml.Linq;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
@@ -399,8 +401,6 @@ namespace SZKG_Photoshop_O75HNX
 
 		public static Bitmap ApplyBoxFilter(Bitmap srcImage, int kernelSize = 3)
 		{
-			//TODO: optimize with 32bpp
-
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
@@ -453,10 +453,10 @@ namespace SZKG_Photoshop_O75HNX
 							}
 						}
 
-						uint* dstPix = (uint*)(pDstBase + y * stride + x * 4);
-						uint alpha = dstPix[0] & 0xFF000000;
+						uint* dstPixel = (uint*)(pDstBase + y * stride + x * 4);
+						uint alpha = dstPixel[0] & 0xFF000000;
 
-						dstPix[0] = alpha | ((uint)(sumR / count) << 16) | ((uint)(sumG / count) << 8) | (uint)(sumB / count);
+						dstPixel[0] = alpha | ((uint)(sumR / count) << 16) | ((uint)(sumG / count) << 8) | (uint)(sumB / count);
 					}
 				});
 			}
@@ -573,10 +573,10 @@ namespace SZKG_Photoshop_O75HNX
                             }
                         }
 
-                        uint* dstPix = (uint*)(pDstBase + y * stride + x * 4);
-                        uint alpha = dstPix[0] & 0xFF000000;
+                        uint* dstPixel = (uint*)(pDstBase + y * stride + x * 4);
+                        uint alpha = dstPixel[0] & 0xFF000000;
 
-                        dstPix[0] = alpha | ((uint)sumR << 16) | ((uint)sumG << 8) | (uint)sumB;
+                        dstPixel[0] = alpha | ((uint)sumR << 16) | ((uint)sumG << 8) | (uint)sumB;
                     }
                 });
             }
@@ -639,68 +639,108 @@ namespace SZKG_Photoshop_O75HNX
 		}
 
 		// Sobel X kernel
-		private static readonly int[,] sobelX = new int[,]
+		private static readonly int[,] sobelXKernel = new int[,]
         {
-			{ 1, 0, -1 },
-			{ 2, 0, -2 },
-			{ 1, 0, -1 }
+			{ -1, 0, 1 },
+			{ -2, 0, 2 },
+			{ -1, 0, 1 }
         };
 
         // Sobel Y kernel
-        private static readonly int[,] sobelY = new int[,]
+        private static readonly int[,] sobelYKernel = new int[,]
         {
-			{  1,  2,  1 },
+			{ -1, -2, -1 },
 			{  0,  0,  0 },
-			{ -1, -2, -1 }
+			{  1,  2,  1 }
         };
 
         public static Bitmap ApplySobelEdgeDetection(Bitmap srcImage)
         {
-            int width = srcImage.Width;
-            int height = srcImage.Height;
+            int imgWidthPix = srcImage.Width;
+            int imgHeightPix = srcImage.Height;
 
-            Bitmap dstImage = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+            Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format32bppArgb);
 
-            BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, width, height),
+            BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
                 ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
-            BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, width, height),
+            BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
                 ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
 
             int stride = srcBmData.Stride;
 
-            int[,] gx = new int[,] { { 1, 0, -1 }, { 2, 0, -2 }, { 1, 0, -1 } };
-            int[,] gy = new int[,] { { 1, 2, 1 }, { 0, 0, 0 }, { -1, -2, -1 } };
+            int[,] sobelX = sobelXKernel;
+			int[,] sobelY = sobelYKernel;
 
-            unsafe
+			unsafe
             {
                 byte* pSrcBase = (byte*)srcBmData.Scan0;
                 byte* pDstBase = (byte*)dstBmData.Scan0;
 
-                Parallel.For(1, height - 1, y =>
+                Parallel.For(1, imgHeightPix - 1, y =>
                 {
-                    for (int x = 1; x < width - 1; x++)
+                    for (int x = 1; x < imgWidthPix - 1; x++)
                     {
-                        int sumX = 0, sumY = 0;
+						int Gy = 0, Gx = 0;
 
-                        for (int ky = -1; ky <= 1; ky++)
-                        {
-                            for (int kx = -1; kx <= 1; kx++)
-                            {
-                                byte* pPixel = pSrcBase + (y + ky) * stride + (x + kx) * 4;
-                                byte gray = (byte)(*(uint*)pPixel & 0xFF); // B komponens
+						//int y0 = y - 1;   // ablak felső sora
+						//int x0 = x - 1;   // ablak bal széle
 
-                                sumX += gray * gx[ky + 1, kx + 1];
-                                sumY += gray * gy[ky + 1, kx + 1];
-                            }
-                        }
+						//for (int ky = 0; ky < 3; ky++)
+						//{
+						//	uint* pWindow = (uint*)(pSrcBase + (y0 + ky) * stride + x0 * 4);
 
-                        int mag = (int)Math.Sqrt(sumX * sumX + sumY * sumY);
-                        if (mag > 255) mag = 255;
-                        if (mag < 0) mag = 0;
+						//	for (int kx = 0; kx < 3; kx++)
+						//{
+						//		uint currPixelValue = pWindow[0];
+						//		byte gray = (byte)currPixelValue;
 
-                        uint* dstPixel = (uint*)(pDstBase + y * stride + x * 4);
-                        *dstPixel = 0xFF000000 | ((uint)mag << 16) | ((uint)mag << 8) | (uint)mag;
+						//		sumY += gray * sobelY[ky, kx];
+						//		sumX += gray * sobelX[ky, kx];
+
+						//		pWindow++;
+						//}
+						//}
+
+						int y0 = y - 1;   // ablak felső sora
+						int x0 = x - 1;   // ablak bal széle
+
+						// Sor -1
+						uint* pPreviousRow = (uint*)(pSrcBase + (y0 + 0) * stride + x0 * 4);
+						byte g00 = (byte)pPreviousRow[0];
+						byte g01 = (byte)pPreviousRow[1];
+						byte g02 = (byte)pPreviousRow[2];
+
+						// Sor 0
+						uint* pCurrentRow = (uint*)(pSrcBase + (y0 + 1) * stride + x0 * 4);
+						byte g10 = (byte)pCurrentRow[0];
+						byte g11 = (byte)pCurrentRow[1];
+						byte g12 = (byte)pCurrentRow[2];
+
+						// Sor 1
+						uint* pNextRow = (uint*)(pSrcBase + (y0 + 2) * stride + x0 * 4);
+						byte g20 = (byte)pNextRow[0];
+						byte g21 = (byte)pNextRow[1];
+						byte g22 = (byte)pNextRow[2];
+
+						// Sobel Y
+						Gy += g00 * sobelY[0, 0] + g01 * sobelY[0, 1] + g02 * sobelY[0, 2];
+						Gy += g10 * sobelY[1, 0] + g11 * sobelY[1, 1] + g12 * sobelY[1, 2];
+						Gy += g20 * sobelY[2, 0] + g21 * sobelY[2, 1] + g22 * sobelY[2, 2];
+
+						// Sobel X
+						Gx += g00 * sobelX[0, 0] + g01 * sobelX[0, 1] + g02 * sobelX[0, 2];
+						Gx += g10 * sobelX[1, 0] + g11 * sobelX[1, 1] + g12 * sobelX[1, 2];
+						Gx += g20 * sobelX[2, 0] + g21 * sobelX[2, 1] + g22 * sobelX[2, 2];
+
+						//int G = (int)Math.Sqrt(Gx * Gx + Gy * Gy);
+
+						// G ~ |Gx| + |Gy|
+						int  G = Math.Abs(Gx) + Math.Abs(Gy);
+						G = Math.Min(G, 255);
+
+						uint* dstPixel = (uint*)(pDstBase + y * stride + x * 4);
+						dstPixel[0] = 0xFF000000 | ((uint)G << 16) | ((uint)G << 8) | (uint)G;
                     }
                 });
             }
