@@ -73,8 +73,6 @@ namespace SZKG_Photoshop_O75HNX
 
 						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)gammaLUT[(byte)(currPixelValue >> 16)] << 16) | ((uint)gammaLUT[(byte)(currPixelValue >> 8)] << 8) | gammaLUT[(byte)currPixelValue]; // >> biteltolás balra, Look Up Table alkalmazása
 
-						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)gammaLUT[r] << 16) | ((uint)gammaLUT[g] << 8) | gammaLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
-
 						pRow++;
 					}
 				});
@@ -117,8 +115,6 @@ namespace SZKG_Photoshop_O75HNX
 
 						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)logLUT[(byte)(currPixelValue >> 16)] << 16) | ((uint)logLUT[(byte)(currPixelValue >> 8)] << 8) | logLUT[(byte)(currPixelValue)]; // >> biteltolás balra, Look Up Table alkalmazása
 
-						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)logLUT[r] << 16) | ((uint)logLUT[g] << 8) | logLUT[b]; // >> biteltolás balra, Look Up Table alkalmazása
-
 						pRow++;
 					}
 				});
@@ -152,8 +148,6 @@ namespace SZKG_Photoshop_O75HNX
 						uint currPixelValue = pRow[0];
 
 						byte gray = (byte)((114 * (byte)(currPixelValue) + 587 * (byte)(currPixelValue >> 8) + 299 * (byte)(currPixelValue >> 16)) / 1000);
-
-						byte gray = (byte)((114 * b + 587 * g + 299 * r) / 1000);
 
 						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)gray << 16) | ((uint)gray << 8) | gray;
 
@@ -217,10 +211,6 @@ namespace SZKG_Photoshop_O75HNX
 							lb[(byte)(currPixelValue)]++;
                             lg[(byte)(currPixelValue >> 8)]++;
                             lr[(byte)(currPixelValue >> 16)]++;
-
-							lb[b]++;
-                            lg[g]++;
-                            lr[r]++;
 
 							pRow++;
                         }
@@ -404,6 +394,7 @@ namespace SZKG_Photoshop_O75HNX
 								sumB += pWindow[0];
 								sumG += pWindow[1];
 								sumR += pWindow[2];
+
 								pWindow += 3;
 							}
 						}
