@@ -265,7 +265,7 @@ namespace SZKG_Photoshop_O75HNX
 				{
 					RunImageProcessingWithTimer(() =>
 					{
-						pictureBox2.Image = ImageProcessingAlgorithms.ApplyLaplacianEdgeDetection(bmImage);
+						pictureBox2.Image = ImageProcessingAlgorithms.ApplyLaplacianEdgeDetection(bmImage, neighborsValue);
 					}, "ApplyLaplacianEdgeDetection");
 				}
 				else

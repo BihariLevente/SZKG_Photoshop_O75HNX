@@ -77,7 +77,9 @@
 			tablePanel11 = CreateTableLayoutPanel(button11);
 
 			button12 = CreateButton("LaplacianEdge", button12_Click);
-			tablePanel12 = CreateTableLayoutPanel(button12);
+			neighborsLabel = CreateLabel(neighborsValue, "Neighbors: ");
+			neighborsTrackBar = CreateParameterTrackBar(value => neighborsValue = (int)value, neighborsLabel, 4, 8, 4, 4, "Neighbors: ");
+			tablePanel12 = CreateTableLayoutPanel(neighborsLabel, neighborsTrackBar, button12);
 
 			button13 = CreateButton("KeyPoints", button13_Click);
 			tablePanel13 = CreateTableLayoutPanel(button13);
@@ -357,11 +359,14 @@
 		private TableLayoutPanel tablePanel11;
         private Button button11;
 
-        private TableLayoutPanel tablePanel12;
-        private Button button12;
+		private TableLayoutPanel tablePanel12;
+		private Button button12;
+		public TrackBar neighborsTrackBar;
+		private Label neighborsLabel;
+		public int neighborsValue = 4;
 
-        private TableLayoutPanel tablePanel13;
-        private Button button13;
+		private TableLayoutPanel tablePanel13;
+		private Button button13;
 
 		private TableLayoutPanel tablePanel14;
 		private Button button14;

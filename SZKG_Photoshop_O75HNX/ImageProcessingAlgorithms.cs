@@ -74,7 +74,7 @@ namespace SZKG_Photoshop_O75HNX
 					{
 						uint currPixelValue = pRow[0];
 
-						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)gammaLUT[(byte)(currPixelValue >> 16)] << 16) | ((uint)gammaLUT[(byte)(currPixelValue >> 8)] << 8) | gammaLUT[(byte)currPixelValue]; // >> biteltolás balra, Look Up Table alkalmazása
+						pRow[0] = (currPixelValue & 0xFF000000u) | ((uint)gammaLUT[(byte)(currPixelValue >> 16)] << 16) | ((uint)gammaLUT[(byte)(currPixelValue >> 8)] << 8) | gammaLUT[(byte)currPixelValue]; // >> biteltolás balra, Look Up Table alkalmazása
 
 						pRow++;
 					}
@@ -116,7 +116,7 @@ namespace SZKG_Photoshop_O75HNX
 					{
 						uint currPixelValue = pRow[0];
 
-						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)logLUT[(byte)(currPixelValue >> 16)] << 16) | ((uint)logLUT[(byte)(currPixelValue >> 8)] << 8) | logLUT[(byte)(currPixelValue)]; // >> biteltolás balra, Look Up Table alkalmazása
+						pRow[0] = (currPixelValue & 0xFF000000u) | ((uint)logLUT[(byte)(currPixelValue >> 16)] << 16) | ((uint)logLUT[(byte)(currPixelValue >> 8)] << 8) | logLUT[(byte)(currPixelValue)]; // >> biteltolás balra, Look Up Table alkalmazása
 
 						pRow++;
 					}
@@ -152,7 +152,7 @@ namespace SZKG_Photoshop_O75HNX
 
 						byte gray = (byte)((114 * (byte)(currPixelValue) + 587 * (byte)(currPixelValue >> 8) + 299 * (byte)(currPixelValue >> 16)) / 1000);
 
-						pRow[0] = (currPixelValue & 0xFF000000) | ((uint)gray << 16) | ((uint)gray << 8) | gray;
+						pRow[0] = (currPixelValue & 0xFF000000u) | ((uint)gray << 16) | ((uint)gray << 8) | gray;
 
 						pRow++;
 					}
@@ -455,7 +455,7 @@ namespace SZKG_Photoshop_O75HNX
 						}
 
 						uint* dstPixel = (uint*)(pDstBase + y * stride + x * 4);
-						uint alpha = dstPixel[0] & 0xFF000000;
+						uint alpha = dstPixel[0] & 0xFF000000u;
 
 						dstPixel[0] = alpha | ((uint)(sumR / count) << 16) | ((uint)(sumG / count) << 8) | (uint)(sumB / count);
 					}
@@ -505,6 +505,7 @@ namespace SZKG_Photoshop_O75HNX
 			{
 				for (int x = -radius; x <= radius; x++)
 				{
+					// Képlet: g(x,y) = e^-((x^2+y^2)/(2sigma^2))
 					double v = Math.Exp(-(x * x + y * y) / twoSigma2);
 					kernel[y + radius, x + radius] = v;
 					sum += v;
@@ -580,7 +581,7 @@ namespace SZKG_Photoshop_O75HNX
                         }
 
                         uint* dstPixel = (uint*)(pDstBase + y * stride + x * 4);
-                        uint alpha = dstPixel[0] & 0xFF000000;
+                        uint alpha = dstPixel[0] & 0xFF000000u;
 
                         dstPixel[0] = alpha | ((uint)sumR << 16) | ((uint)sumG << 8) | (uint)sumB;
                     }
@@ -644,21 +645,19 @@ namespace SZKG_Photoshop_O75HNX
 			return true;
 		}
 
-		// Sobel X kernel
-		private static readonly int[,] sobelXKernel = new int[,]
-        {
-			{ -1, 0, 1 },
-			{ -2, 0, 2 },
-			{ -1, 0, 1 }
-        };
+		//private static readonly int[,] sobelXKernel = new int[,]
+        //{
+		//	{ -1, 0,  1 },
+		//	{ -2, 0,  2 },
+		//	{ -1, 0,  1 }
+        //};
 
-        // Sobel Y kernel
-        private static readonly int[,] sobelYKernel = new int[,]
-        {
-			{ -1, -2, -1 },
-			{  0,  0,  0 },
-			{  1,  2,  1 }
-        };
+		//private static readonly int[,] sobelYKernel = new int[,]
+		//{
+		//	{ -1, -2, -1 },
+		//	{  0,  0,  0 },
+		//	{  1,  2,  1 }
+		//};
 
         public static Bitmap ApplySobelEdgeDetection(Bitmap srcImage)
         {
@@ -674,9 +673,6 @@ namespace SZKG_Photoshop_O75HNX
                 ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
 
             int stride = srcBmData.Stride;
-
-            int[,] sobelX = sobelXKernel;
-			int[,] sobelY = sobelYKernel;
 
 			unsafe
             {
@@ -708,45 +704,43 @@ namespace SZKG_Photoshop_O75HNX
 						//}
 						//}
 
-						int y0 = y - 1;   // ablak felső sora
-						int x0 = x - 1;   // ablak bal széle
+						int x0 = x - 1;
 
-						// Sor -1
-						uint* pPreviousRow = (uint*)(pSrcBase + (y0 + 0) * stride + x0 * 4);
+						// Sor y-1
+						uint* pPreviousRow = (uint*)(pSrcBase + (y - 1) * stride + x0 * 4);
 						byte g00 = (byte)pPreviousRow[0];
 						byte g01 = (byte)pPreviousRow[1];
 						byte g02 = (byte)pPreviousRow[2];
 
-						// Sor 0
-						uint* pCurrentRow = (uint*)(pSrcBase + (y0 + 1) * stride + x0 * 4);
+						// Sor y
+						uint* pCurrentRow = (uint*)(pSrcBase + y * stride + x0 * 4);
 						byte g10 = (byte)pCurrentRow[0];
-						byte g11 = (byte)pCurrentRow[1];
+						//byte g11 = (byte)pCurrentRow[1];
 						byte g12 = (byte)pCurrentRow[2];
 
-						// Sor 1
-						uint* pNextRow = (uint*)(pSrcBase + (y0 + 2) * stride + x0 * 4);
+						// Sor y+1
+						uint* pNextRow = (uint*)(pSrcBase + (y + 1) * stride + x0 * 4);
 						byte g20 = (byte)pNextRow[0];
 						byte g21 = (byte)pNextRow[1];
 						byte g22 = (byte)pNextRow[2];
 
-						// Sobel Y
-						Gy += g00 * sobelY[0, 0] + g01 * sobelY[0, 1] + g02 * sobelY[0, 2];
-						Gy += g10 * sobelY[1, 0] + g11 * sobelY[1, 1] + g12 * sobelY[1, 2];
-						Gy += g20 * sobelY[2, 0] + g21 * sobelY[2, 1] + g22 * sobelY[2, 2];
+						// sobelY = [-1 -2 -1; 0 0 0; 1 2 1]
+						//Gy += - g00 - 2 * g01 - g02 + g20 + 2 * g21 + g22;
+						Gy += -g00 - (g01 << 1) - g02 + g20 + (g21 << 1) + g22;
 
-						// Sobel X
-						Gx += g00 * sobelX[0, 0] + g01 * sobelX[0, 1] + g02 * sobelX[0, 2];
-						Gx += g10 * sobelX[1, 0] + g11 * sobelX[1, 1] + g12 * sobelX[1, 2];
-						Gx += g20 * sobelX[2, 0] + g21 * sobelX[2, 1] + g22 * sobelX[2, 2];
+						// sobelX = [-1 0 1; -2 0 2; -1 0 1]
+						//Gx += - g00 + g02 - 2 * g10 + 2 * g12 - g20 + g22;
+						Gx += -g00 + g02 - (g10 << 1) + (g12 << 1) - g20 + g22;
 
-						//int G = (int)Math.Sqrt(Gx * Gx + Gy * Gy);
+						// G = gyök(Gx^2 + Gy^2)
+						// int G = (int)Math.Sqrt(Gx * Gx + Gy * Gy);
 
 						// G ~ |Gx| + |Gy|
-						int  G = Math.Abs(Gx) + Math.Abs(Gy);
-						G = Math.Min(G, 255);
+						int amp = Math.Abs(Gx) + Math.Abs(Gy);
+						amp = Math.Min(amp, 255);
 
 						uint* dstPixel = (uint*)(pDstBase + y * stride + x * 4);
-						dstPixel[0] = 0xFF000000 | ((uint)G << 16) | ((uint)G << 8) | (uint)G;
+						dstPixel[0] = 0xFF000000u | ((uint)amp << 16) | ((uint)amp << 8) | (uint)amp;
                     }
                 });
             }
@@ -757,26 +751,92 @@ namespace SZKG_Photoshop_O75HNX
             return dstImage;
         }
 
-        public static Bitmap ApplyLaplacianEdgeDetection(Bitmap srcImage)
-		{
-			//TODO: to write the function with 32bpp
+		//private static readonly int[,] neighbors4LaplaceKernel = new int[,]
+		//{
+		//	{ 0,  1,  0 },
+		//	{ 1, -4,  1 },
+		//	{ 0,  1,  0 }
+		//};
 
+		//private static readonly int[,] neighbors8LaplaceKernel = new int[,]
+		//{
+		//	{ 1,  1,  1 },
+		//	{ 1, -8,  1 },
+		//	{ 1,  1,  1 }
+		//};
+
+		public static Bitmap ApplyLaplacianEdgeDetection(Bitmap srcImage, int neighbors = 4)
+		{
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
-			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+			Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format32bppArgb);
 
-			//TODO: 
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+
+			BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+
+			int stride = srcBmData.Stride;
+
+			unsafe
+			{
+				byte* pSrcBase = (byte*)srcBmData.Scan0;
+				byte* pDstBase = (byte*)dstBmData.Scan0;
+
+				Parallel.For(1, imgHeightPix - 1, y =>
+				{
+					for (int x = 1; x < imgWidthPix - 1; x++)
+					{
+						int x0 = (x - 1);
+
+						// Sor y-1
+						uint* pPreviousRow = (uint*)(pSrcBase + (y - 1) * stride + x0 * 4);
+						byte g00 = (byte)pPreviousRow[0];
+						byte g01 = (byte)pPreviousRow[1];
+						byte g02 = (byte)pPreviousRow[2];
+
+						// Sor y
+						uint* pCurrentRow = (uint*)(pSrcBase + y * stride + x0 * 4);
+						byte g10 = (byte)pCurrentRow[0];
+						byte g11 = (byte)pCurrentRow[1];
+						byte g12 = (byte)pCurrentRow[2];
+
+						// Sor y+1
+						uint* pNextRow = (uint*)(pSrcBase + (y + 1) * stride + x0 * 4);
+						byte g20 = (byte)pNextRow[0];
+						byte g21 = (byte)pNextRow[1];
+						byte g22 = (byte)pNextRow[2];
+
+						int L;
+						if (neighbors == 8)
+						{
+							// 8-neighbour: [1 1 1; 1 -8 1; 1 1 1]
+							L = g00 + g01 + g02 + g10 - (g11 << 3) + g12 + g20 + g21 + g22; // -8 * g11
+						}
+						else
+						{
+							// 4-neighbour: [0 1 0; 1 -4 1; 0 1 0]
+							L = g01 + g10 - (g11 << 2) + g12 + g21; // -4 * g11
+						}
+
+						int amp = Math.Abs(L);
+
+						uint* dstPixel = (uint*)(pDstBase + y * stride + x * 4);
+						dstPixel[0] = 0xFF000000u | ((uint)amp << 16) | ((uint)amp << 8) | (uint)amp;
+					}
+				});
+			}
 
 			srcImage.UnlockBits(srcBmData);
-			return srcImage;
+			dstImage.UnlockBits(dstBmData);
+
+			return dstImage;
 		}
 
 		public static Bitmap DetectKeypoints(Bitmap srcImage)
 		{
-			//TODO: to write the function with 32bpp
-
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
@@ -822,7 +882,7 @@ namespace SZKG_Photoshop_O75HNX
 						byte gray = (byte)currPixelValue;
 						byte binary = (byte)(gray > threshold ? 255 : 0);
 
-						uint alpha = pSrcRow[0] & 0xFF000000;
+						uint alpha = pSrcRow[0] & 0xFF000000u;
 						pDstRow[0] = alpha | ((uint)binary << 16) | ((uint)binary << 8) | (uint)binary;
 
 						pSrcRow++;
