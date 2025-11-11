@@ -343,56 +343,64 @@ namespace SZKG_Photoshop_O75HNX
             return (eqHistB, eqHistG, eqHistR);
         }
 
-        public static void ShowHistogram(int[] histB, int[] histG, int[] histR, string titleText)
-        {
-            var histForm = new Form
-            {
-                Text = titleText,
-                WindowState = FormWindowState.Maximized
-            };
+		public static void ShowHistogram(int[] histB, int[] histG, int[] histR, string titleText)
+		{
+			var histForm = new Form
+			{
+				Text = titleText,
+				WindowState = FormWindowState.Maximized
+			};
 
-            histForm.Paint += (s, e) =>
-            {
-                Graphics g = e.Graphics;
-                g.Clear(Color.White);
+			histForm.Paint += (s, e) =>
+			{
+				Graphics g = e.Graphics;
+				g.Clear(Color.White);
 
-                int width = histForm.ClientSize.Width;
-                int height = histForm.ClientSize.Height;
+				int width = histForm.ClientSize.Width;
+				int height = histForm.ClientSize.Height;
 
-                int bgrMax = Math.Max(histB.Max(), Math.Max(histG.Max(), histR.Max()));
-                int bgrWidth = width / histB.Length;
-                int barWidth = bgrWidth / 3;
-                int barSpacing = 1;
+				// Margók
+				int marginLeft = 30;
+				int marginRight = 30;
+				int drawableWidth = width - marginLeft - marginRight;
 
-                for (int i = 0; i < 256; i++)
-                {
-                    int xStart = i * bgrWidth + 60;
-                    int heightScale = height - 60;
+				float bgrWidth = (float)drawableWidth / 256f;
+				float barWidth = bgrWidth / 3f;
+				float barSpacing = 1f;
+
+				int bgrMax = Math.Max(histB.Max(), Math.Max(histG.Max(), histR.Max()));
+
+				int heightScale = height - 60;
+
+				for (int i = 0; i < 256; i++)
+				{
+					float xStart = marginLeft + i * bgrWidth;
 
 					// Blue
-					int bHeight = (int)((double)histB[i] / bgrMax * heightScale);
+					int bHeight = (int)((float)histB[i] / bgrMax * heightScale);
 					int bY = height - bHeight - 15;
 					g.FillRectangle(Brushes.Blue, xStart + 2 * (barWidth + barSpacing), bY, barWidth, bHeight);
 
 					// Green
-					int gHeight = (int)((double)histG[i] / bgrMax * heightScale);
+					int gHeight = (int)((float)histG[i] / bgrMax * heightScale);
 					int gY = height - gHeight - 15;
 					g.FillRectangle(Brushes.Green, xStart + barWidth + barSpacing, gY, barWidth, gHeight);
 
 					// Red
-					int rHeight = (int)((double)histR[i] / bgrMax * heightScale);
-                    int rY = height - rHeight - 15;
-                    g.FillRectangle(Brushes.Red, xStart, rY, barWidth, rHeight);
-                }
+					int rHeight = (int)((float)histR[i] / bgrMax * heightScale);
+					int rY = height - rHeight - 15;
+					g.FillRectangle(Brushes.Red, xStart, rY, barWidth, rHeight);
+				}
 
-                Font font = new Font("Arial", 10, FontStyle.Bold);
-                string maxText = $"Max value: {bgrMax}";
-                SizeF textSize = g.MeasureString(maxText, font);
-                g.DrawString(maxText, font, Brushes.Black, (width - textSize.Width) / 2, 10);
-            };
+				// Max érték kiírása viszonyítási alapként
+				Font font = new Font("Arial", 10, FontStyle.Bold);
+				string maxText = $"Max value: {bgrMax}";
+				SizeF textSize = g.MeasureString(maxText, font);
+				g.DrawString(maxText, font, Brushes.Black, (width - textSize.Width) / 2, 10);
+			};
 
-            histForm.Show();
-        }
+			histForm.Show();
+		}
 
 		public static Bitmap ApplyBoxFilter(Bitmap srcImage, int kernelSize = 3)
 		{
