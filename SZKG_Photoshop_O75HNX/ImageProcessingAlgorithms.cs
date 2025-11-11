@@ -1,13 +1,7 @@
-﻿using System.Drawing;
-using System.Drawing.Imaging;
-using System.Runtime.Intrinsics.Arm;
-using System.Windows.Forms.VisualStyles;
-using System.Xml.Linq;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-
+﻿using System.Drawing.Imaging;
 namespace SZKG_Photoshop_O75HNX
 {
-    public class ImageProcessingAlgorithms
+	public class ImageProcessingAlgorithms
 	{
 		public static Bitmap InvertImage(Bitmap srcImage)
 		{
@@ -840,13 +834,29 @@ namespace SZKG_Photoshop_O75HNX
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
-			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+			Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format32bppArgb);
 
-			//TODO: 
+			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+
+			BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+
+			int stride = srcBmData.Stride;
+
+			unsafe
+			{
+				byte* pSrcBase = (byte*)srcBmData.Scan0;
+				byte* pDstBase = (byte*)dstBmData.Scan0;
+
+				//TODO: 
+
+			}
 
 			srcImage.UnlockBits(srcBmData);
-			return srcImage;
+			dstImage.UnlockBits(dstBmData);
+
+			return dstImage;
 		}
 
 		public static Bitmap ThresholdImage(Bitmap srcImage, int threshold = 128)
