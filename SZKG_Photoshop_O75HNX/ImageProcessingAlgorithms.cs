@@ -1,4 +1,6 @@
-﻿using System.Drawing.Imaging;
+﻿using System.Collections.Concurrent;
+using System.Drawing.Imaging;
+using System.Linq.Expressions;
 namespace SZKG_Photoshop_O75HNX
 {
 	public class ImageProcessingAlgorithms
@@ -100,11 +102,11 @@ namespace SZKG_Photoshop_O75HNX
 
             unsafe
 			{
-				byte* pBase = (byte*)srcBmData.Scan0;
+				byte* pSrcBase = (byte*)srcBmData.Scan0;
 
 				Parallel.For(0, imgHeightPix, y =>
 				{
-					uint* pRow = (uint*)(pBase + y * stride);
+					uint* pRow = (uint*)(pSrcBase + y * stride);
 
 					for (int x = 0; x < imgWidthPix; x++)
 					{
@@ -134,11 +136,11 @@ namespace SZKG_Photoshop_O75HNX
 
 			unsafe
 			{
-				byte* pBase = (byte*)srcBmData.Scan0;
+				byte* pSrcBase = (byte*)srcBmData.Scan0;
 
 				Parallel.For(0, imgHeightPix, y =>
 				{
-					uint* pRow = (uint*)(pBase + y * stride);
+					uint* pRow = (uint*)(pSrcBase + y * stride);
 
 					for (int x = 0; x < imgWidthPix; x++)
 					{
@@ -226,7 +228,7 @@ namespace SZKG_Photoshop_O75HNX
 
             unsafe
             {
-                byte* pBase = (byte*)srcBmData.Scan0;
+                byte* pSrcBase = (byte*)srcBmData.Scan0;
 
                 int processorCount = Environment.ProcessorCount;
                 var localB = new int[processorCount][];
@@ -251,7 +253,7 @@ namespace SZKG_Photoshop_O75HNX
 
                     for (int y = startY; y < endY; y++)
                     {
-                        uint* pRow = (uint*)(pBase + y * stride);
+                        uint* pRow = (uint*)(pSrcBase + y * stride);
 
                         for (int x = 0; x < imgWidthPix; x++)
                         {
@@ -284,9 +286,9 @@ namespace SZKG_Photoshop_O75HNX
 
         public static (int[], int[], int[]) EqualizeHistogram(int[] histB, int[] histG, int[] histR)
 		{
-			//Képlet: s = T(r) = (L - 1)*Σp_A(i) <--- (i 0-tól r-ig)
+            //Képlet: s = T(r) = (L - 1)*Σp_A(i) <--- (i 0-tól r-ig)
 
-			int L = histR.Count();
+            int L = histR.Count();
 
             int sumB = histB.Sum();
             int sumG = histG.Sum();
@@ -661,10 +663,13 @@ namespace SZKG_Photoshop_O75HNX
 		//	{  1,  2,  1 }
 		//};
 
-        public static Bitmap ApplySobelEdgeDetection(Bitmap srcImage)
+        public static (Bitmap, float[,], float[,]) ApplySobelEdgeDetection(Bitmap srcImage)
         {
             int imgWidthPix = srcImage.Width;
             int imgHeightPix = srcImage.Height;
+
+            float[,] Ix = new float[imgHeightPix - 2, imgWidthPix - 2];
+            float[,] Iy = new float[imgHeightPix - 2, imgWidthPix - 2];
 
             Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format32bppArgb);
 
@@ -734,11 +739,14 @@ namespace SZKG_Photoshop_O75HNX
 						//Gx += - g00 + g02 - 2 * g10 + 2 * g12 - g20 + g22;
 						Gx += -g00 + g02 - (g10 << 1) + (g12 << 1) - g20 + g22;
 
-						// G = gyök(Gx^2 + Gy^2)
-						// int G = (int)Math.Sqrt(Gx * Gx + Gy * Gy);
+						Ix[y-1, x-1] = Gx;
+                        Iy[y-1, x-1] = Gy;
 
-						// G ~ |Gx| + |Gy|
-						int amp = Math.Abs(Gx) + Math.Abs(Gy);
+                        // G = gyök(Gx^2 + Gy^2)
+                        // int G = (int)Math.Sqrt(Gx * Gx + Gy * Gy);
+
+                        // G ~ |Gx| + |Gy|
+                        int amp = Math.Abs(Gx) + Math.Abs(Gy);
 						amp = Math.Min(amp, 255);
 
 						uint* dstPixel = (uint*)(pDstBase + y * stride + x * 4);
@@ -750,7 +758,7 @@ namespace SZKG_Photoshop_O75HNX
             srcImage.UnlockBits(srcBmData);
             dstImage.UnlockBits(dstBmData);
 
-            return dstImage;
+            return (dstImage, Ix, Iy);
         }
 
 		//private static readonly int[,] neighbors4LaplaceKernel = new int[,]
@@ -772,7 +780,7 @@ namespace SZKG_Photoshop_O75HNX
 			int imgWidthPix = srcImage.Width;
 			int imgHeightPix = srcImage.Height;
 
-			Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format32bppArgb);
+            Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format32bppArgb);
 
 			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
 				ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
@@ -791,7 +799,7 @@ namespace SZKG_Photoshop_O75HNX
 				{
 					for (int x = 1; x < imgWidthPix - 1; x++)
 					{
-						int x0 = (x - 1);
+						int x0 = x - 1;
 
 						// Sor y-1
 						uint* pPreviousRow = (uint*)(pSrcBase + (y - 1) * stride + x0 * 4);
@@ -802,7 +810,7 @@ namespace SZKG_Photoshop_O75HNX
 						// Sor y
 						uint* pCurrentRow = (uint*)(pSrcBase + y * stride + x0 * 4);
 						byte g10 = (byte)pCurrentRow[0];
-						byte g11 = (byte)pCurrentRow[1];
+						byte center = (byte)pCurrentRow[1];
 						byte g12 = (byte)pCurrentRow[2];
 
 						// Sor y+1
@@ -815,12 +823,12 @@ namespace SZKG_Photoshop_O75HNX
 						if (neighbors == 8)
 						{
 							// 8-neighbour: [1 1 1; 1 -8 1; 1 1 1]
-							L = g00 + g01 + g02 + g10 - (g11 << 3) + g12 + g20 + g21 + g22; // -8 * g11
+							L = g00 + g01 + g02 + g10 - (center << 3) + g12 + g20 + g21 + g22; // -8 * g11
 						}
 						else
 						{
 							// 4-neighbour: [0 1 0; 1 -4 1; 0 1 0]
-							L = g01 + g10 - (g11 << 2) + g12 + g21; // -4 * g11
+							L = g01 + g10 - (center << 2) + g12 + g21; // -4 * g11
 						}
 
 						int amp = Math.Abs(L);
@@ -837,35 +845,93 @@ namespace SZKG_Photoshop_O75HNX
 			return dstImage;
 		}
 
-		public static Bitmap DetectKeypoints(Bitmap srcImage)
+        public static Bitmap DrawPoints(Bitmap srcImage, IEnumerable<Point> points, int pointSize = 3)
+        {
+            int imgWidthPix = srcImage.Width;
+            int imgHeightPix = srcImage.Height;
+
+            BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+				ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+
+            int stride = srcBmData.Stride;
+            int radius = pointSize / 2;
+
+            unsafe
+            {
+                byte* pSrcBase = (byte*)srcBmData.Scan0;
+
+                foreach (var p in points)
+                {
+                    for (int dy = -radius; dy <= radius; dy++)
+                    {
+                        int y = p.Y + dy;
+                        if (y < 0 || y >= imgHeightPix) continue;
+
+                        for (int dx = -radius; dx <= radius; dx++)
+                        {
+                            int x = p.X + dx;
+                            if (x < 0 || x >= imgWidthPix) continue;
+
+                            uint* pixel = (uint*)(pSrcBase + y * stride + x * 4);
+
+							pixel[0] = 0xFFFF0000; // A, R = 255 és G, B = 0
+                        }
+                    }
+                }
+            }
+
+            srcImage.UnlockBits(srcBmData);
+            return srcImage;
+        }
+
+        public static ConcurrentBag<Point> DetectKeypoints(float[,] Ix, float[,] Iy, int threshold = 1000)
 		{
-			int imgWidthPix = srcImage.Width;
-			int imgHeightPix = srcImage.Height;
+            int height = Ix.GetLength(0);
+            int width = Ix.GetLength(1);
 
-			Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format32bppArgb);
+            ConcurrentBag<Point> keyPoints = new ConcurrentBag<Point>();
 
-			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            unsafe
+            {
+				Parallel.For(1, height - 1, y =>
+				{
+					for (int x = 1; x < width - 1; x++)
+					{
+                        float Ix00 = Ix[y - 1, x - 1], Ix01 = Ix[y - 1, x], Ix02 = Ix[y - 1, x + 1];
+                        float Ix10 = Ix[y, x - 1], Ix11 = Ix[y, x], Ix12 = Ix[y, x + 1];
+                        float Ix20 = Ix[y + 1, x - 1], Ix21 = Ix[y + 1, x], Ix22 = Ix[y + 1, x + 1];
 
-			BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+                        float Iy00 = Iy[y - 1, x - 1], Iy01 = Iy[y - 1, x], Iy02 = Iy[y - 1, x + 1];
+                        float Iy10 = Iy[y, x - 1], Iy11 = Iy[y, x], Iy12 = Iy[y, x + 1];
+                        float Iy20 = Iy[y + 1, x - 1], Iy21 = Iy[y + 1, x], Iy22 = Iy[y + 1, x + 1];
 
-			int stride = srcBmData.Stride;
+                        float Ix2 = (Ix00 * Ix00 + Ix01 * Ix01 + Ix02 * Ix02 +
+                                    Ix10 * Ix10 + Ix11 * Ix11 + Ix12 * Ix12 +
+                                    Ix20 * Ix20 + Ix21 * Ix21 + Ix22 * Ix22) / 9f;
 
-			unsafe
-			{
-				byte* pSrcBase = (byte*)srcBmData.Scan0;
-				byte* pDstBase = (byte*)dstBmData.Scan0;
+                        float Iy2 = (Iy00 * Iy00 + Iy01 * Iy01 + Iy02 * Iy02 +
+                                    Iy10 * Iy10 + Iy11 * Iy11 + Iy12 * Iy12 +
+                                    Iy20 * Iy20 + Iy21 * Iy21 + Iy22 * Iy22) / 9f;
 
-				//TODO: 
+                        float Ixy = (Ix00 * Iy00 + Ix01 * Iy01 + Ix02 * Iy02 +
+                                    Ix10 * Iy10 + Ix11 * Iy11 + Ix12 * Iy12 +
+                                    Ix20 * Iy20 + Ix21 * Iy21 + Ix22 * Iy22) / 9f;
 
-			}
+                        float det = Ix2 * Iy2 - Ixy * Ixy;
+                        float trace = Ix2 + Iy2;
 
-			srcImage.UnlockBits(srcBmData);
-			dstImage.UnlockBits(dstBmData);
+                        float f = det / trace;
 
-			return dstImage;
-		}
+						if (f > threshold)
+						{
+							keyPoints.Add(new Point(x, y));
+                        }
+					}
+				});
+            }
+
+            return (keyPoints);
+        }
 
 		public static Bitmap ThresholdImage(Bitmap srcImage, int threshold = 128)
 		{

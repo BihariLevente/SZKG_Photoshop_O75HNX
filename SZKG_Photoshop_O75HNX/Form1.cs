@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 
@@ -5,16 +6,23 @@ namespace SZKG_Photoshop_O75HNX
 {
 	public partial class Form1 : Form
 	{
-        int[] histR = new int[256];
-        int[] histG = new int[256];
-        int[] histB = new int[256];
+        private int[]? histR;
+        private int[]? histG;
+        private int[]? histB;
+
+		float[,]? Ix;
+		float[,]? Iy;
+
+        Bitmap? lastImage;
+		ConcurrentBag<Point> keyPoints;
 
         public Form1()
 		{
 			InitializeComponent();
+            this.Text = "Mini Photoshop - BL";
 
-			// resize GroupBoxes
-			flowLayoutPanel1.Resize += (s, e) =>
+            // resize GroupBoxes
+            flowLayoutPanel1.Resize += (s, e) =>
 			{
 				AdjustGroupBoxAndButton(tablePanel1, button1);
 				AdjustGroupBoxAndButton(tablePanel2, button2);
@@ -44,6 +52,7 @@ namespace SZKG_Photoshop_O75HNX
 			if (File.Exists(imagePath))
 			{
 				pictureBox1.Image = Image.FromFile(imagePath);
+                lastImage = new Bitmap(pictureBox1.Image);
                 imgSizeLabel.Text = $"Image size:\n ({pictureBox1.Image.Width}, {pictureBox1.Image.Height})";
             }
 
@@ -56,26 +65,35 @@ namespace SZKG_Photoshop_O75HNX
 			tablePanel.Width = flowLayoutPanel1.Width / 15;
 		}
 
-		private void RunImageProcessingWithTimer(Action action, string methodName)
+		private void RunImageProcessingWithTimer(Func<string> action, string methodName)
 		{
 			Stopwatch sw = Stopwatch.StartNew();
-			action();
-			sw.Stop();
-			MessageBox.Show($"{methodName} method execution time: {sw.ElapsedMilliseconds} ms\n\n{sw.ElapsedTicks} ticks (1ms = {Stopwatch.Frequency / 1000} ticks)",
+            string result = action();
+            sw.Stop();
+			MessageBox.Show($"{methodName} method execution time: {sw.ElapsedMilliseconds} ms\n\n{sw.ElapsedTicks} ticks (1ms = {Stopwatch.Frequency / 1000} ticks){result}",
 				"Timing", MessageBoxButtons.OK, MessageBoxIcon.Information);
 		}
 
-        private void button1_Click(object sender, EventArgs e)
+        private void button0_Click(object sender, EventArgs e)
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
                 openFileDialog.Filter = "Image|*.png;*.jpg;*.bmp;*.gif";
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    Image img = Image.FromFile(openFileDialog.FileName);
-                    pictureBox1.Image = img;
+                    pictureBox1.Image = Image.FromFile(openFileDialog.FileName);
+                    lastImage = new Bitmap(pictureBox1.Image);
                     imgSizeLabel.Text = $"Image size: ({pictureBox1.Image.Width}, {pictureBox1.Image.Height})";
                 }
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+			if (lastImage != null)
+			{
+				pictureBox1.Image = lastImage;
+
             }
         }
 
@@ -130,7 +148,8 @@ namespace SZKG_Photoshop_O75HNX
 				RunImageProcessingWithTimer(() =>
 				{
 					pictureBox2.Image = ImageProcessingAlgorithms.InvertImage(bmImage);
-				}, "InvertImage");
+                    return "";
+                }, "InvertImage");
 			}
 		}
 
@@ -143,7 +162,8 @@ namespace SZKG_Photoshop_O75HNX
 				RunImageProcessingWithTimer(() =>
 				{
 					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGammaTransform(bmImage, gammaValue);
-				}, "ApplyGammaCorrection");
+                    return "";
+                }, "ApplyGammaCorrection");
 			}
 		}
 
@@ -156,7 +176,8 @@ namespace SZKG_Photoshop_O75HNX
 				RunImageProcessingWithTimer(() =>
 				{
 					pictureBox2.Image = ImageProcessingAlgorithms.ApplyLogTransform(bmImage, cValue);
-				}, "ApplyLogTransform");
+                    return "";
+                }, "ApplyLogTransform");
 			}
 		}
 
@@ -169,7 +190,8 @@ namespace SZKG_Photoshop_O75HNX
 				RunImageProcessingWithTimer(() =>
 				{
 					pictureBox2.Image = ImageProcessingAlgorithms.ConvertToGrayscale(bmImage);
-				}, "ConvertToGrayscale");
+                    return "";
+                }, "ConvertToGrayscale");
 			}
 		}
 
@@ -182,30 +204,34 @@ namespace SZKG_Photoshop_O75HNX
 				RunImageProcessingWithTimer(() =>
 				{
                     (histB, histG, histR) = ImageProcessingAlgorithms.ComputeHistogram(bmImage);
+                    return "";
                 }, "ComputeHistogram");
                 RunImageProcessingWithTimer(() =>
                 {
-                    ImageProcessingAlgorithms.ShowHistogram(histB, histG, histR, "Histrogram");
+                    ImageProcessingAlgorithms.ShowHistogram(histB!, histG!, histR!, "Histrogram");
+                    return "";
                 }, "ShowHistogram");
             }
 		}
 
 		private void button8_Click(object sender, EventArgs e)
 		{
-            if (!(histR.All(b => b == 0) && histG.All(g => g == 0) && histB.All(r => r == 0)))
+            if (histB != null && histB.All(b => b != 0)/*&& histG != null && histG.All(g => g != 0) && histR != null && histR.All(r => r != 0)*/)
             {
                 RunImageProcessingWithTimer(() =>
                 {
-                    (histB, histG, histR) = ImageProcessingAlgorithms.EqualizeHistogram(histB, histG, histR);
+                    (histB, histG, histR) = ImageProcessingAlgorithms.EqualizeHistogram(histB, histG!, histR!);
+                    return "";
                 }, "ShowEqualizedHistogram");
 				RunImageProcessingWithTimer(() =>
 				{
-					ImageProcessingAlgorithms.ShowHistogram(histB, histG, histR, "Histrogram");
-				}, "ShowHistogram");
+					ImageProcessingAlgorithms.ShowHistogram(histB, histG!, histR!, "Histrogram");
+                    return "";
+                }, "ShowHistogram");
 			}
             else
             {
-                MessageBox.Show("The image histogram is empty. Cannot perform histogram equalization.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("The histogram arrays are empty. Cannot perform histogram equalization.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -218,7 +244,8 @@ namespace SZKG_Photoshop_O75HNX
 				RunImageProcessingWithTimer(() =>
 				{
 					pictureBox2.Image = ImageProcessingAlgorithms.ApplyBoxFilter(bmImage, k1Value);
-				}, "ApplyBoxFilter");
+                    return "";
+                }, "ApplyBoxFilter");
 			}
 		}
 
@@ -231,11 +258,33 @@ namespace SZKG_Photoshop_O75HNX
 				RunImageProcessingWithTimer(() =>
 				{
 					pictureBox2.Image = ImageProcessingAlgorithms.ApplyGaussianFilter(bmImage, k2Value);
-				}, "ApplyGaussianFilter");
+                    return "";
+                }, "ApplyGaussianFilter");
 			}
 		}
 
-		private void button11_Click(object sender, EventArgs e)
+        private void button11_Click(object sender, EventArgs e)
+        {
+            if (pictureBox1.Image != null)
+            {
+                Bitmap bmImage = new Bitmap(pictureBox1.Image);
+
+                if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
+                {
+                    RunImageProcessingWithTimer(() =>
+                    {
+                        pictureBox2.Image = ImageProcessingAlgorithms.ApplyLaplacianEdgeDetection(bmImage, neighborsValue);
+                        return "";
+                    }, "ApplyLaplacianEdgeDetection");
+                }
+                else
+                {
+                    MessageBox.Show("This function can only run on grayscale images.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+        }
+
+        private void button12_Click(object sender, EventArgs e)
 		{
 			if (pictureBox1.Image != null)
 			{
@@ -245,8 +294,10 @@ namespace SZKG_Photoshop_O75HNX
 				{
 					RunImageProcessingWithTimer(() =>
 					{
-						pictureBox2.Image = ImageProcessingAlgorithms.ApplySobelEdgeDetection(bmImage);
-					}, "ApplySobelEdgeDetection");
+						(pictureBox2.Image, Ix, Iy) = ImageProcessingAlgorithms.ApplySobelEdgeDetection(bmImage);
+                        return "";
+                    }, "ApplySobelEdgeDetection");
+
 				}
 				else
 				{
@@ -254,26 +305,7 @@ namespace SZKG_Photoshop_O75HNX
 				}
 			}
 		}
-
-		private void button12_Click(object sender, EventArgs e)
-		{
-			if (pictureBox1.Image != null)
-			{
-				Bitmap bmImage = new Bitmap(pictureBox1.Image);
-
-				if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
-				{
-					RunImageProcessingWithTimer(() =>
-					{
-						pictureBox2.Image = ImageProcessingAlgorithms.ApplyLaplacianEdgeDetection(bmImage, neighborsValue);
-					}, "ApplyLaplacianEdgeDetection");
-				}
-				else
-				{
-					MessageBox.Show("This function can only run on grayscale images.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-				}
-			}
-		}
+		
 
 		private void button13_Click(object sender, EventArgs e)
 		{
@@ -281,13 +313,15 @@ namespace SZKG_Photoshop_O75HNX
 			{
 				Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
-				if (ImageProcessingAlgorithms.IsGrayscale(bmImage))
+				if (ImageProcessingAlgorithms.IsGrayscale(bmImage) && Ix != null && Iy != null)
 				{
 					RunImageProcessingWithTimer(() =>
 					{
-						pictureBox2.Image = ImageProcessingAlgorithms.DetectKeypoints(bmImage);
-					}, "DetectKeypoints");
-				}
+						keyPoints = ImageProcessingAlgorithms.DetectKeypoints(Ix, Iy, thresholdValue);
+                        pictureBox2.Image = ImageProcessingAlgorithms.DrawPoints(bmImage, keyPoints, pointSizeValue);
+                        return "\n\nNumber of detected keypoints: " + keyPoints.Count();
+                    }, "DetectKeypoints");
+                }
 				else
 				{
 					MessageBox.Show("This function can only run on grayscale images.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -305,7 +339,8 @@ namespace SZKG_Photoshop_O75HNX
 				{
 					RunImageProcessingWithTimer(() =>
 					{
-						pictureBox2.Image = ImageProcessingAlgorithms.ThresholdImage(bmImage, thresholdValue);
+						pictureBox2.Image = ImageProcessingAlgorithms.ThresholdImage(bmImage, threshold2Value);
+						return "";
 					}, "ThresholdImage");
 				}
 				else
