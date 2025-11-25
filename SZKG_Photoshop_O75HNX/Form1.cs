@@ -124,7 +124,7 @@ namespace SZKG_Photoshop_O75HNX
 				// TANULSÁG: new Bitmap(Image) mindig 32 bpp-s képet hoz létre
 				// viszont ha konvertálunk (Bitmap)-al, akkor az eredeti bpp megmarad, de ilyenkor nem az értékét, hanem a referenciáját adja át
 				// ha clone-ozunk akkor viszont NAGYON lassul a képfeldolgozás 30-40 ms -> 400-500 ms
-
+				//Bitmap bmImage = (Bitmap)pictureBox1.Image.Clone();
 				Bitmap bmImage = new Bitmap(pictureBox1.Image);
 
 				RunImageProcessingWithTimer(() =>
