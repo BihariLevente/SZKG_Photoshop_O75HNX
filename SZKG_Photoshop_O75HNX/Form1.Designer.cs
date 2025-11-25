@@ -35,10 +35,11 @@
             flowLayoutPanel1 = new FlowLayoutPanel();
 
             imgSizeLabel = CreateLabel(0, "Image size:\n");
-            button1 = CreateButton("Load", button1_Click);
-            tablePanel1 = CreateTableLayoutPanel(imgSizeLabel, button1);
+            button0 = CreateButton("Load (Left)", button0_Click);
+            button1 = CreateButton("Reset (Left)", button1_Click);
+            tablePanel1 = CreateTableLayoutPanel(imgSizeLabel, button0, button1);
 
-            button2 = CreateButton("Save", button2_Click);
+            button2 = CreateButton("Save (Right)", button2_Click);
 			tablePanel2 = CreateTableLayoutPanel(button2);
 
             button3 = CreateButton("Invert", button3_Click);
@@ -46,12 +47,12 @@
 
             button4 = CreateButton("GammaCorrect", button4_Click);
             gammaLabel = CreateLabel(gammaValue, "Gamma: ");
-            gammaTrackBar = CreateParameterTrackBar(value => gammaValue = value, gammaLabel, 0.1, 10, 0.1, 1, "Gamma: ");
+            gammaTrackBar = CreateParameterTrackBar(value => gammaValue = value, gammaLabel, 0.1, 10, 0.1, gammaValue, "Gamma: ");
 			tablePanel4 = CreateTableLayoutPanel(gammaLabel, gammaTrackBar, button4);
 
             button5 = CreateButton("LogTransform", button5_Click);
             cLabel = CreateLabel(cValue, "C: ");
-            cTrackBar = CreateParameterTrackBar(value => cValue = (int)value, cLabel, 5, 100, 1, 46, "C: ");
+            cTrackBar = CreateParameterTrackBar(value => cValue = (int)value, cLabel, 5, 100, 1, cValue, "C: ");
 			tablePanel5 = CreateTableLayoutPanel(cLabel, cTrackBar, button5);
 
 			button6 = CreateButton("GrayScale", button6_Click);
@@ -65,29 +66,32 @@
 
             button9 = CreateButton("BoxFilter", button9_Click);
             k1Label = CreateLabel(k1Value, "Kernel: ");
-            k1TrackBar = CreateParameterTrackBar(value => k1Value = (int)value, k1Label, 3, 15, 2, 3, "Kernel: ");
+            k1TrackBar = CreateParameterTrackBar(value => k1Value = (int)value, k1Label, 3, 15, 2, k1Value, "Kernel: ");
 			tablePanel9 = CreateTableLayoutPanel(k1Label, k1TrackBar, button9);
 
 			button10 = CreateButton("GaussFilter", button10_Click);
 			gaussLabel = CreateLabel(k1Value, "Kernel: ");
-			k2TrackBar = CreateParameterTrackBar(value => k2Value = (int)value, gaussLabel, 3, 15, 2, 3, "Kernel: ");
+			k2TrackBar = CreateParameterTrackBar(value => k2Value = (int)value, gaussLabel, 3, 15, 2, k2Value, "Kernel: ");
             tablePanel10 = CreateTableLayoutPanel(gaussLabel, k2TrackBar, button10);
 
-			button11 = CreateButton("SobelEdge", button11_Click);
-			tablePanel11 = CreateTableLayoutPanel(button11);
+            button11 = CreateButton("LaplacianEdge", button11_Click);
+            neighborsLabel = CreateLabel(neighborsValue, "Neighbors: ");
+            neighborsTrackBar = CreateParameterTrackBar(value => neighborsValue = (int)value, neighborsLabel, 4, 8, 4, neighborsValue, "Neighbors: ");
+            tablePanel11 = CreateTableLayoutPanel(neighborsLabel, neighborsTrackBar, button11);
 
-			button12 = CreateButton("LaplacianEdge", button12_Click);
-			neighborsLabel = CreateLabel(neighborsValue, "Neighbors: ");
-			neighborsTrackBar = CreateParameterTrackBar(value => neighborsValue = (int)value, neighborsLabel, 4, 8, 4, 4, "Neighbors: ");
-			tablePanel12 = CreateTableLayoutPanel(neighborsLabel, neighborsTrackBar, button12);
+            button12 = CreateButton("SobelEdge", button12_Click);
+			tablePanel12 = CreateTableLayoutPanel(button12);
 
 			button13 = CreateButton("KeyPoints", button13_Click);
-			tablePanel13 = CreateTableLayoutPanel(button13);
+            thresholdLabel = CreateLabel(thresholdValue, "Threshold: ");
+            thresholdTrackBar = CreateParameterTrackBar(value => thresholdValue = (int)value, thresholdLabel, 1000, 60000, 1000, thresholdValue, "Threshold: ");
+            pointSizeTrackBar = CreateParameterTrackBar(value => pointSizeValue = (int)value, thresholdLabel, 1, 20, 1, pointSizeValue, "Point Size: ");
+            tablePanel13 = CreateTableLayoutPanel(thresholdLabel, thresholdTrackBar, pointSizeTrackBar, button13);
 
-			button14 = CreateButton("Threshold", button14_Click);
-			thresholdLabel = CreateLabel(thresholdValue, "Value: ");
-			thresholdTrackBar = CreateParameterTrackBar(value => thresholdValue = (int)value, thresholdLabel, 1, 255, 2, 128, "Value: ");
-			tablePanel14 = CreateTableLayoutPanel(thresholdLabel, thresholdTrackBar, button14);
+            button14 = CreateButton("Binarize", button14_Click);
+			threshold2Label = CreateLabel(threshold2Value, "Threshold: ");
+			threshold2TrackBar = CreateParameterTrackBar(value => threshold2Value = (int)value, threshold2Label, 0, 255, 1, threshold2Value, "Threshold: ");
+			tablePanel14 = CreateTableLayoutPanel(threshold2Label, threshold2TrackBar, button14);
 
 			button15 = CreateButton("Left <- Right", button15_Click);
 			tablePanel15 = CreateTableLayoutPanel(button15);
@@ -232,22 +236,32 @@
 
 			panel.RowCount = controls.Length;
 
-			for (int i = 0; i < controls.Length; i++)
-			{
-				var c = controls[i];
-				c.Margin = new Padding(0);
+            for (int i = 0; i < controls.Length; i++)
+            {
+                var c = controls[i];
+                c.Margin = new Padding(0);
 
-				c.Dock = (c is Label) ? DockStyle.Top : DockStyle.Fill;
+                c.Dock = (c is Label) ? DockStyle.Top : DockStyle.Fill;
 
-				if (c is Label)
-					panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-				else
-					panel.RowStyles.Add(new RowStyle(SizeType.Percent, percentEach));
+                if (c is Label)
+                {
+                    panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                }
+                else if (c is TrackBar)
+                {
+                    // TrackBar-nak kisebb sor
+                    panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
+                    c.Dock = DockStyle.Top;
+                }
+                else
+                {
+                    panel.RowStyles.Add(new RowStyle(SizeType.Percent, percentEach));
+                }
 
-				panel.Controls.Add(c, 0, i);
-			}
+                panel.Controls.Add(c, 0, i);
+            }
 
-			if (dynamicCount > 0)
+            if (dynamicCount > 0)
 				panel.Height = 50;
 
 			return panel;
@@ -314,6 +328,7 @@
         private PictureBox pictureBox2;
 
         private TableLayoutPanel tablePanel1;
+        private Button button0;
         private Button button1;
         public Label imgSizeLabel;
 
@@ -356,23 +371,28 @@
         private Label gaussLabel;
         public int k2Value = 3;
 
-		private TableLayoutPanel tablePanel11;
+        private TableLayoutPanel tablePanel11;
         private Button button11;
+        public TrackBar neighborsTrackBar;
+        private Label neighborsLabel;
+        public int neighborsValue = 4;
 
-		private TableLayoutPanel tablePanel12;
-		private Button button12;
-		public TrackBar neighborsTrackBar;
-		private Label neighborsLabel;
-		public int neighborsValue = 4;
+        private TableLayoutPanel tablePanel12;
+        private Button button12;
 
 		private TableLayoutPanel tablePanel13;
 		private Button button13;
+        public TrackBar thresholdTrackBar;
+        private Label thresholdLabel;
+        public int thresholdValue = 10000;
+        public TrackBar pointSizeTrackBar;
+        public int pointSizeValue = 3;
 
-		private TableLayoutPanel tablePanel14;
+        private TableLayoutPanel tablePanel14;
 		private Button button14;
-		public TrackBar thresholdTrackBar;
-		private Label thresholdLabel;
-		public int thresholdValue = 128;
+		public TrackBar threshold2TrackBar;
+		private Label threshold2Label;
+		public int threshold2Value = 128;
 
 		private TableLayoutPanel tablePanel15;
         private Button button15;
