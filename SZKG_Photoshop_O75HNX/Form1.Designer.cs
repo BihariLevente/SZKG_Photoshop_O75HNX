@@ -84,7 +84,7 @@
 
 			button13 = CreateButton("KeyPoints", button13_Click);
             thresholdLabel = CreateLabel(thresholdValue, "Threshold: ");
-            thresholdTrackBar = CreateParameterTrackBar(value => thresholdValue = (int)value, thresholdLabel, 1000, 60000, 1000, thresholdValue, "Threshold: ");
+            thresholdTrackBar = CreateParameterTrackBar(value => thresholdValue = (int)value, thresholdLabel, 1000, 120000, 1000, thresholdValue, "Threshold: ");
             pointSizeTrackBar = CreateParameterTrackBar(value => pointSizeValue = (int)value, thresholdLabel, 1, 20, 1, pointSizeValue, "Point Size: ");
             tablePanel13 = CreateTableLayoutPanel(thresholdLabel, thresholdTrackBar, pointSizeTrackBar, button13);
 
