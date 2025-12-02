@@ -160,57 +160,57 @@ namespace SZKG_Photoshop_O75HNX
 			return srcImage;
 		}
 
-		public static Bitmap ConvertToGrayscale8bpp(Bitmap srcImage)
-        {
-            int imgWidthPix = srcImage.Width;
-            int imgHeightPix = srcImage.Height;
+		//public static Bitmap ConvertToGrayscale8bpp(Bitmap srcImage)
+  //      {
+  //          int imgWidthPix = srcImage.Width;
+  //          int imgHeightPix = srcImage.Height;
 
-			Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format8bppIndexed);
+		//	Bitmap dstImage = new Bitmap(imgWidthPix, imgHeightPix, PixelFormat.Format8bppIndexed);
 
-			BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-                ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+		//	BitmapData srcBmData = srcImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+  //              ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
-			ColorPalette pal = dstImage.Palette;
-			for (int i = 0; i < 256; i++)
-            {
-				pal.Entries[i] = Color.FromArgb(i, i, i);
-			}
-			dstImage.Palette = pal;
+		//	ColorPalette pal = dstImage.Palette;
+		//	for (int i = 0; i < 256; i++)
+  //          {
+		//		pal.Entries[i] = Color.FromArgb(i, i, i);
+		//	}
+		//	dstImage.Palette = pal;
 
-			BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
-				ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed);
+		//	BitmapData dstBmData = dstImage.LockBits(new Rectangle(0, 0, imgWidthPix, imgHeightPix),
+		//		ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed);
 
-			int sStride = srcBmData.Stride;
-			int dStride = dstBmData.Stride;
+		//	int sStride = srcBmData.Stride;
+		//	int dStride = dstBmData.Stride;
 
-			unsafe
-            {
-				byte* pSrcBase = (byte*)srcBmData.Scan0;
-				byte* pDstBase = (byte*)dstBmData.Scan0;
+		//	unsafe
+  //          {
+		//		byte* pSrcBase = (byte*)srcBmData.Scan0;
+		//		byte* pDstBase = (byte*)dstBmData.Scan0;
 
-				Parallel.For(0, imgHeightPix, y =>
-                {
-					uint* pSrcRow = (uint*)(pSrcBase + y * sStride);
-					byte* pDstRow = pDstBase + y * dStride;
+		//		Parallel.For(0, imgHeightPix, y =>
+  //              {
+		//			uint* pSrcRow = (uint*)(pSrcBase + y * sStride);
+		//			byte* pDstRow = pDstBase + y * dStride;
 
-					for (int x = 0; x < imgWidthPix; x++)
-                    {
-						uint currPixelValue = pSrcRow[0];
+		//			for (int x = 0; x < imgWidthPix; x++)
+  //                  {
+		//				uint currPixelValue = pSrcRow[0];
 
-						pDstRow[0] = (byte)((114 * (byte)(currPixelValue) + 587 * (byte)(currPixelValue >> 8) + 299 * (byte)(currPixelValue >> 16)) / 1000);
+		//				pDstRow[0] = (byte)((114 * (byte)(currPixelValue) + 587 * (byte)(currPixelValue >> 8) + 299 * (byte)(currPixelValue >> 16)) / 1000);
 
-						pSrcRow++;
-						// 8bpp!
-                        pDstRow++;
-					}
-                });
-            }
+		//				pSrcRow++;
+		//				// 8bpp!
+  //                      pDstRow++;
+		//			}
+  //              });
+  //          }
 
-            srcImage.UnlockBits(srcBmData);
-			dstImage.UnlockBits(dstBmData);
+  //          srcImage.UnlockBits(srcBmData);
+		//	dstImage.UnlockBits(dstBmData);
 
-			return dstImage;
-        }
+		//	return dstImage;
+  //      }
 
         public static (int[] histB, int[] histG, int[] histR) ComputeHistogram(Bitmap srcImage)
         {
@@ -284,66 +284,45 @@ namespace SZKG_Photoshop_O75HNX
             return (histB, histG, histR);
         }
 
-        public static (int[], int[], int[]) EqualizeHistogram(int[] histB, int[] histG, int[] histR)
+		public static (int[], int[], int[]) EqualizeHistogram(int[] histB, int[] histG, int[] histR)
 		{
-            //Képlet: s = T(r) = (L - 1)*Σp_A(i) <--- (i 0-tól r-ig)
+			//Képlet: s = T(r) = (L - 1)*Σp_A(i) <--- (i 0-tól r-ig)
 
-            int L = histR.Count();
+			int L = histB.Length;
 
-            int sumB = histB.Sum();
-            int sumG = histG.Sum();
-            int sumR = histR.Sum();
+			int sumPixels = 0;
+			for (int i = 0; i < L; i++)
+			{
+				sumPixels += histB[i];
+			}
 
-            double[] pB = new double[L];
-            double[] pG = new double[L];
-            double[] pR = new double[L];
+			int[] eqHistB = new int[L];
+			int[] eqHistG = new int[L];
+			int[] eqHistR = new int[L];
 
-            for (int i = 0; i < L; i++)
-            {
-                pB[i] = (double)histB[i] / sumB;
-                pG[i] = (double)histG[i] / sumG;
-                pR[i] = (double)histR[i] / sumR;
-            }
+			int cumB = 0, cumG = 0, cumR = 0;
 
-            double[] cdfB = new double[L];
-            double[] cdfG = new double[L];
-            double[] cdfR = new double[L];
+			for (int i = 0; i < L; i++)
+			{
+				cumB += histB[i];
+				cumG += histG[i];
+				cumR += histR[i];
 
-            cdfB[0] = pB[0];
-            cdfG[0] = pG[0];
-            cdfR[0] = pR[0];
+				double cdfB = (double)cumB / sumPixels;
+				double cdfG = (double)cumG / sumPixels;
+				double cdfR = (double)cumR / sumPixels;
 
-            for (int i = 1; i < L; i++)
-            {
-                cdfB[i] = cdfB[i - 1] + pB[i];
-                cdfG[i] = cdfG[i - 1] + pG[i];
-                cdfR[i] = cdfR[i - 1] + pR[i];
-            }
+				int mapB = (int)Math.Round((L - 1) * cdfB);
+				int mapG = (int)Math.Round((L - 1) * cdfG);
+				int mapR = (int)Math.Round((L - 1) * cdfR);
 
-            int[] mapB = new int[L];
-            int[] mapG = new int[L];
-            int[] mapR = new int[L];
+				eqHistB[mapB] += histB[i];
+				eqHistG[mapG] += histG[i];
+				eqHistR[mapR] += histR[i];
+			}
 
-            for (int i = 0; i < L; i++)
-            {
-                mapB[i] = (int)Math.Round((L - 1) * cdfB[i]);
-                mapG[i] = (int)Math.Round((L - 1) * cdfG[i]);
-                mapR[i] = (int)Math.Round((L - 1) * cdfR[i]);
-            }
-
-            int[] eqHistB = new int[L];
-            int[] eqHistG = new int[L];
-            int[] eqHistR = new int[L];
-
-            for (int i = 0; i < L; i++)
-            {
-                eqHistB[mapB[i]] += histB[i];
-                eqHistG[mapG[i]] += histG[i];
-                eqHistR[mapR[i]] += histR[i];
-            }
-
-            return (eqHistB, eqHistG, eqHistR);
-        }
+			return (eqHistB, eqHistG, eqHistR);
+		}
 
 		public static void ShowHistogram(int[] histB, int[] histG, int[] histR, string titleText)
 		{
