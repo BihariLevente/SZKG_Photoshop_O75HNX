@@ -45,9 +45,9 @@ namespace SZKG_Photoshop_O75HNX
 			for (int i = 0; i < 4; i++)
 			{
 				basepath = Directory.GetParent(basepath)!.FullName;
-			} 
+			}
 
-			string imagePath = basepath + "\\images\\defaultimg.jpg";
+			string imagePath = Path.Combine(AppContext.BaseDirectory, "images", "defaultimg.jpg");
 
 			if (File.Exists(imagePath))
 			{
